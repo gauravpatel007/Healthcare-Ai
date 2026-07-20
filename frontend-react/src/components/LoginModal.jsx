@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import API from '../utils/api';
 
-const GOOGLE_CLIENT_ID = '662469189147-fo899uu6567eaqndmg72748v6depof3g.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = 'xxxxxxxxxxxxxxxx.apps.googleusercontent.com';
 
 const LoginModal = ({ show, onClose }) => {
   // Auth mode: 'login' | 'signup' | 'forgot' | 'reset' | 'face'
