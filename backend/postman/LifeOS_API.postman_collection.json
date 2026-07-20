@@ -5,13 +5,27 @@
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
-    {"key": "base_url", "value": "http://localhost:8000/api/v1"},
-    {"key": "access_token", "value": ""},
-    {"key": "refresh_token", "value": ""}
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api/v1"
+    },
+    {
+      "key": "access_token",
+      "value": ""
+    },
+    {
+      "key": "refresh_token",
+      "value": ""
+    }
   ],
   "auth": {
     "type": "bearer",
-    "bearer": [{"key": "token", "value": "{{access_token}}"}]
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}"
+      }
+    ]
   },
   "item": [
     {
@@ -22,8 +36,16 @@
           "request": {
             "method": "POST",
             "url": "{{base_url}}/auth/register",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"email\":\"test@lifeos.com\",\"password\":\"Test123!\",\"name\":\"Test User\",\"role\":\"patient\"}"}
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"test@lifeos.com\",\"password\":\"Test123!\",\"name\":\"Test User\",\"role\":\"patient\"}"
+            }
           }
         },
         {
@@ -45,8 +67,16 @@
           "request": {
             "method": "POST",
             "url": "{{base_url}}/auth/login",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"email\":\"gaurav@lifeos.com\",\"password\":\"password123\"}"}
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"email\":\"xxxx@xxx.com\",\"password\":\"xxxxxx\"}"
+            }
           }
         },
         {
@@ -54,47 +84,99 @@
           "request": {
             "method": "POST",
             "url": "{{base_url}}/auth/refresh",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"refresh_token\":\"{{refresh_token}}\"}"}
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"refresh_token\":\"{{refresh_token}}\"}"
+            }
           }
         },
         {
           "name": "Get Current User",
-          "request": {"method": "GET", "url": "{{base_url}}/auth/me"}
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/auth/me"
+          }
         },
         {
           "name": "Logout",
-          "request": {"method": "POST", "url": "{{base_url}}/auth/logout"}
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/logout"
+          }
         }
       ]
     },
     {
       "name": "Users",
       "item": [
-        {"name": "Get Profile", "request": {"method": "GET", "url": "{{base_url}}/users/profile"}},
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/users/profile"
+          }
+        },
         {
           "name": "Update Profile",
           "request": {
             "method": "PUT",
             "url": "{{base_url}}/users/profile",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"name\":\"Gaurav Patel\",\"weight\":71.5}"}
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Gaurav Patel\",\"weight\":71.5}"
+            }
           }
         },
-        {"name": "Export Data", "request": {"method": "GET", "url": "{{base_url}}/users/export"}}
+        {
+          "name": "Export Data",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/users/export"
+          }
+        }
       ]
     },
     {
       "name": "Dashboard",
       "item": [
-        {"name": "Get Summary", "request": {"method": "GET", "url": "{{base_url}}/dashboard/summary"}}
+        {
+          "name": "Get Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/dashboard/summary"
+          }
+        }
       ]
     },
     {
       "name": "Medical Records",
       "item": [
-        {"name": "List Records", "request": {"method": "GET", "url": "{{base_url}}/records"}},
-        {"name": "List by Category", "request": {"method": "GET", "url": "{{base_url}}/records?category=blood_test"}},
+        {
+          "name": "List Records",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/records"
+          }
+        },
+        {
+          "name": "List by Category",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/records?category=blood_test"
+          }
+        },
         {
           "name": "Create Record",
           "request": {
@@ -103,11 +185,31 @@
             "body": {
               "mode": "formdata",
               "formdata": [
-                {"key": "title", "value": "Liver Function Test", "type": "text"},
-                {"key": "category", "value": "blood_test", "type": "text"},
-                {"key": "doctor", "value": "Dr. Kumar", "type": "text"},
-                {"key": "hospital", "value": "Apollo", "type": "text"},
-                {"key": "findings", "value": "All values normal", "type": "text"}
+                {
+                  "key": "title",
+                  "value": "Liver Function Test",
+                  "type": "text"
+                },
+                {
+                  "key": "category",
+                  "value": "blood_test",
+                  "type": "text"
+                },
+                {
+                  "key": "doctor",
+                  "value": "Dr. Kumar",
+                  "type": "text"
+                },
+                {
+                  "key": "hospital",
+                  "value": "Apollo",
+                  "type": "text"
+                },
+                {
+                  "key": "findings",
+                  "value": "All values normal",
+                  "type": "text"
+                }
               ]
             }
           }
@@ -117,129 +219,335 @@
     {
       "name": "Medicines",
       "item": [
-        {"name": "List Medicines", "request": {"method": "GET", "url": "{{base_url}}/medicines"}},
+        {
+          "name": "List Medicines",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/medicines"
+          }
+        },
         {
           "name": "Add Medicine",
           "request": {
             "method": "POST",
             "url": "{{base_url}}/medicines",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"name\":\"Ibuprofen\",\"dosage\":\"400mg\",\"type\":\"tablet\",\"frequency\":\"twice_daily\",\"times\":[\"08:00\",\"20:00\"],\"purpose\":\"Pain relief\",\"total_pills\":20,\"remaining\":20}"}
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Ibuprofen\",\"dosage\":\"400mg\",\"type\":\"tablet\",\"frequency\":\"twice_daily\",\"times\":[\"08:00\",\"20:00\"],\"purpose\":\"Pain relief\",\"total_pills\":20,\"remaining\":20}"
+            }
           }
         },
-        {"name": "Check Interactions", "request": {"method": "GET", "url": "{{base_url}}/medicines/interactions"}},
-        {"name": "Refill Predictions", "request": {"method": "GET", "url": "{{base_url}}/medicines/refill-predictions"}}
+        {
+          "name": "Check Interactions",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/medicines/interactions"
+          }
+        },
+        {
+          "name": "Refill Predictions",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/medicines/refill-predictions"
+          }
+        }
       ]
     },
     {
       "name": "Appointments",
       "item": [
-        {"name": "List Upcoming", "request": {"method": "GET", "url": "{{base_url}}/appointments?status=upcoming"}},
+        {
+          "name": "List Upcoming",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/appointments?status=upcoming"
+          }
+        },
         {
           "name": "Create Appointment",
           "request": {
             "method": "POST",
             "url": "{{base_url}}/appointments",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"doctor\":\"Dr. Smith\",\"specialty\":\"Cardiologist\",\"hospital\":\"City Hospital\",\"date\":\"2024-12-20\",\"time\":\"10:00:00\"}"}
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"doctor\":\"Dr. Smith\",\"specialty\":\"Cardiologist\",\"hospital\":\"City Hospital\",\"date\":\"2024-12-20\",\"time\":\"10:00:00\"}"
+            }
           }
         },
-        {"name": "Suggestions", "request": {"method": "GET", "url": "{{base_url}}/appointments/suggestions"}}
+        {
+          "name": "Suggestions",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/appointments/suggestions"
+          }
+        }
       ]
     },
     {
       "name": "Emergency",
       "item": [
-        {"name": "List Contacts", "request": {"method": "GET", "url": "{{base_url}}/emergency/contacts"}},
+        {
+          "name": "List Contacts",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/emergency/contacts"
+          }
+        },
         {
           "name": "Add Contact",
           "request": {
             "method": "POST",
             "url": "{{base_url}}/emergency/contacts",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"name\":\"Amit\",\"phone\":\"+91-9876543212\",\"relation\":\"Brother\",\"is_primary\":false}"}
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Amit\",\"phone\":\"+91-9876543212\",\"relation\":\"Brother\",\"is_primary\":false}"
+            }
           }
         },
-        {"name": "Trigger SOS", "request": {"method": "POST", "url": "{{base_url}}/emergency/sos"}},
-        {"name": "QR Health Data", "request": {"method": "GET", "url": "{{base_url}}/emergency/qr-data"}},
-        {"name": "Toggle Donor", "request": {"method": "POST", "url": "{{base_url}}/emergency/toggle-donor"}}
+        {
+          "name": "Trigger SOS",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/emergency/sos"
+          }
+        },
+        {
+          "name": "QR Health Data",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/emergency/qr-data"
+          }
+        },
+        {
+          "name": "Toggle Donor",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/emergency/toggle-donor"
+          }
+        }
       ]
     },
     {
       "name": "Family",
       "item": [
-        {"name": "List Members", "request": {"method": "GET", "url": "{{base_url}}/family/members"}},
+        {
+          "name": "List Members",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/family/members"
+          }
+        },
         {
           "name": "Add Member",
           "request": {
             "method": "POST",
             "url": "{{base_url}}/family/members",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"name\":\"Priya Patel\",\"relation\":\"spouse\",\"age\":27,\"blood_type\":\"A+\",\"avatar\":\"👩\",\"conditions\":[],\"medications\":[]}"}
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"name\":\"Priya Patel\",\"relation\":\"spouse\",\"age\":27,\"blood_type\":\"A+\",\"avatar\":\"👩\",\"conditions\":[],\"medications\":[]}"
+            }
           }
         },
-        {"name": "List Vaccinations", "request": {"method": "GET", "url": "{{base_url}}/family/vaccinations"}}
+        {
+          "name": "List Vaccinations",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/family/vaccinations"
+          }
+        }
       ]
     },
     {
       "name": "Health Trackers",
       "item": [
-        {"name": "Get Water", "request": {"method": "GET", "url": "{{base_url}}/trackers/water"}},
+        {
+          "name": "Get Water",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/trackers/water"
+          }
+        },
         {
           "name": "Set Water",
           "request": {
             "method": "PUT",
             "url": "{{base_url}}/trackers/water",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"glasses\":6}"}
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"glasses\":6}"
+            }
           }
         },
-        {"name": "Water History", "request": {"method": "GET", "url": "{{base_url}}/trackers/water/history"}},
-        {"name": "Sleep Log", "request": {"method": "GET", "url": "{{base_url}}/trackers/sleep"}},
-        {"name": "Get BMI", "request": {"method": "GET", "url": "{{base_url}}/trackers/bmi"}},
-        {"name": "Health Data", "request": {"method": "GET", "url": "{{base_url}}/trackers/health-data"}}
+        {
+          "name": "Water History",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/trackers/water/history"
+          }
+        },
+        {
+          "name": "Sleep Log",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/trackers/sleep"
+          }
+        },
+        {
+          "name": "Get BMI",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/trackers/bmi"
+          }
+        },
+        {
+          "name": "Health Data",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/trackers/health-data"
+          }
+        }
       ]
     },
     {
       "name": "Expenses",
       "item": [
-        {"name": "List Expenses", "request": {"method": "GET", "url": "{{base_url}}/expenses"}},
+        {
+          "name": "List Expenses",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/expenses"
+          }
+        },
         {
           "name": "Add Expense",
           "request": {
             "method": "POST",
             "url": "{{base_url}}/expenses",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"description\":\"Eye checkup\",\"category\":\"doctor\",\"amount\":500}"}
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"description\":\"Eye checkup\",\"category\":\"doctor\",\"amount\":500}"
+            }
           }
         },
-        {"name": "Summary", "request": {"method": "GET", "url": "{{base_url}}/expenses/summary"}}
+        {
+          "name": "Summary",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/expenses/summary"
+          }
+        }
       ]
     },
     {
       "name": "Challenges",
       "item": [
-        {"name": "List Challenges", "request": {"method": "GET", "url": "{{base_url}}/challenges"}},
+        {
+          "name": "List Challenges",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/challenges"
+          }
+        },
         {
           "name": "Add Progress",
           "request": {
             "method": "POST",
             "url": "{{base_url}}/challenges/water8/progress",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"amount\":2}"}
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"amount\":2}"
+            }
           }
         },
-        {"name": "Get Streak", "request": {"method": "GET", "url": "{{base_url}}/challenges/streak"}},
-        {"name": "Get Badges", "request": {"method": "GET", "url": "{{base_url}}/challenges/badges"}}
+        {
+          "name": "Get Streak",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/challenges/streak"
+          }
+        },
+        {
+          "name": "Get Badges",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/challenges/badges"
+          }
+        }
       ]
     },
     {
       "name": "Analytics",
       "item": [
-        {"name": "Timeline", "request": {"method": "GET", "url": "{{base_url}}/analytics/timeline"}},
-        {"name": "Graph Data", "request": {"method": "GET", "url": "{{base_url}}/analytics/graphs"}},
-        {"name": "Risk Scores", "request": {"method": "GET", "url": "{{base_url}}/analytics/risk-scores"}},
-        {"name": "Predictions", "request": {"method": "GET", "url": "{{base_url}}/analytics/predictions"}}
+        {
+          "name": "Timeline",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/analytics/timeline"
+          }
+        },
+        {
+          "name": "Graph Data",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/analytics/graphs"
+          }
+        },
+        {
+          "name": "Risk Scores",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/analytics/risk-scores"
+          }
+        },
+        {
+          "name": "Predictions",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/analytics/predictions"
+          }
+        }
       ]
     },
     {
@@ -250,12 +558,32 @@
           "request": {
             "method": "POST",
             "url": "{{base_url}}/ai/chat",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"message\":\"What are the side effects of paracetamol?\"}"}
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"message\":\"What are the side effects of paracetamol?\"}"
+            }
           }
         },
-        {"name": "Chat History", "request": {"method": "GET", "url": "{{base_url}}/ai/chat/history"}},
-        {"name": "Health Tips", "request": {"method": "GET", "url": "{{base_url}}/ai/chat/tips"}}
+        {
+          "name": "Chat History",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/ai/chat/history"
+          }
+        },
+        {
+          "name": "Health Tips",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/ai/chat/tips"
+          }
+        }
       ]
     },
     {
@@ -266,8 +594,16 @@
           "request": {
             "method": "POST",
             "url": "{{base_url}}/ai/symptoms/analyze",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"symptoms\":[\"headache\",\"fever\",\"fatigue\"],\"duration\":\"2-3 days\",\"severity\":\"Moderate\",\"age_group\":\"Adult (18-60)\"}"}
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"symptoms\":[\"headache\",\"fever\",\"fatigue\"],\"duration\":\"2-3 days\",\"severity\":\"Moderate\",\"age_group\":\"Adult (18-60)\"}"
+            }
           }
         }
       ]
@@ -275,17 +611,53 @@
     {
       "name": "AI Nutrition",
       "item": [
-        {"name": "Get Meal Plan", "request": {"method": "GET", "url": "{{base_url}}/ai/nutrition/plan"}},
-        {"name": "Nutrition Stats", "request": {"method": "GET", "url": "{{base_url}}/ai/nutrition/stats"}},
-        {"name": "Regenerate Plan", "request": {"method": "POST", "url": "{{base_url}}/ai/nutrition/regenerate"}}
+        {
+          "name": "Get Meal Plan",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/ai/nutrition/plan"
+          }
+        },
+        {
+          "name": "Nutrition Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/ai/nutrition/stats"
+          }
+        },
+        {
+          "name": "Regenerate Plan",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/ai/nutrition/regenerate"
+          }
+        }
       ]
     },
     {
       "name": "AI Fitness",
       "item": [
-        {"name": "Cardio Workouts", "request": {"method": "GET", "url": "{{base_url}}/ai/fitness/workout?category=cardio"}},
-        {"name": "Weekly Plan", "request": {"method": "GET", "url": "{{base_url}}/ai/fitness/weekly-plan"}},
-        {"name": "Fitness Stats", "request": {"method": "GET", "url": "{{base_url}}/ai/fitness/stats"}}
+        {
+          "name": "Cardio Workouts",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/ai/fitness/workout?category=cardio"
+          }
+        },
+        {
+          "name": "Weekly Plan",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/ai/fitness/weekly-plan"
+          }
+        },
+        {
+          "name": "Fitness Stats",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/ai/fitness/stats"
+          }
+        }
       ]
     },
     {
@@ -296,32 +668,80 @@
           "request": {
             "method": "POST",
             "url": "{{base_url}}/ai/mental/mood",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"mood\":\"🙂\",\"note\":\"Feeling good today\"}"}
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"mood\":\"🙂\",\"note\":\"Feeling good today\"}"
+            }
           }
         },
-        {"name": "Mood History", "request": {"method": "GET", "url": "{{base_url}}/ai/mental/mood/history"}},
-        {"name": "Mood Analysis", "request": {"method": "GET", "url": "{{base_url}}/ai/mental/mood/analysis"}},
+        {
+          "name": "Mood History",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/ai/mental/mood/history"
+          }
+        },
+        {
+          "name": "Mood Analysis",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/ai/mental/mood/analysis"
+          }
+        },
         {
           "name": "Save Journal",
           "request": {
             "method": "POST",
             "url": "{{base_url}}/ai/mental/journal",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"content\":\"Today was a good day. I went for a walk and felt grateful for the sunshine.\"}"}
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"content\":\"Today was a good day. I went for a walk and felt grateful for the sunshine.\"}"
+            }
           }
         },
-        {"name": "Stress Level", "request": {"method": "GET", "url": "{{base_url}}/ai/mental/stress"}},
+        {
+          "name": "Stress Level",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/ai/mental/stress"
+          }
+        },
         {
           "name": "Screening",
           "request": {
             "method": "POST",
             "url": "{{base_url}}/ai/mental/screening",
-            "header": [{"key": "Content-Type", "value": "application/json"}],
-            "body": {"mode": "raw", "raw": "{\"answers\":[1,0,1,0,1,0]}"}
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"answers\":[1,0,1,0,1,0]}"
+            }
           }
         },
-        {"name": "Meditations", "request": {"method": "GET", "url": "{{base_url}}/ai/mental/meditations"}}
+        {
+          "name": "Meditations",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/ai/mental/meditations"
+          }
+        }
       ]
     }
   ]
