@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MediApp Pro Dashboard</title>
+<style>
+  :root {
+    --bg-color: #e3eceb;
+    --panel-bg: #ffffff;
+    --text-main: #111111;
+    --text-muted: #888888;
+    --accent-green: #e6f0e6;
+    --accent-blue: #f0f4ff;
+    --accent-yellow: #fdf6dc;
+    --border-radius: 20px;
+    --sidebar-width: 260px;
+    --right-panel-width: 320px;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  body {
+    background-color: #a4c3be; /* Outer background from image */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    padding: 20px;
+  }
+
+  .app-container {
+    background-color: var(--bg-color);
+    width: 100%;
+    max-width: 1400px;
+    height: 90vh;
+    border-radius: 24px;
+    display: grid;
+    grid-template-columns: var(--sidebar-width) 1fr var(--right-panel-width);
+    overflow: hidden;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+  }
+
+  /* --- Sidebar --- */
+  .sidebar {
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 1.2rem;
+    margin-bottom: 20px;
+  }
+
+  .logo-icon {
+    width: 24px;
+    height: 24px;
+    background: linear-gradient(135deg, #a4c3be, #fbce00);
+    border-radius: 50%;
+  }
+
+  .nav-section {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .nav-title {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+    text-transform: uppercase;
+  }
+
+  .nav-item {
+    padding: 12px 16px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.2s;
+  }
+
+  .nav-item.active {
+    background-color: var(--panel-bg);
+    color: var(--text-main);
+    font-weight: 600;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+  }
+
+  .nav-item:hover:not(.active) {
+    background-color: rgba(255,255,255,0.5);
+  }
+
+  .badge {
+    background-color: var(--text-main);
+    color: white;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 10px;
+  }
+
+  .promo-card {
+    background: linear-gradient(135deg, #fbce00 0%, #a4c3be 100%);
+    padding: 20px;
+    border-radius: var(--border-radius);
+    margin-top: auto;
+  }
+
+  .promo-card h3 {
+    font-size: 1.1rem;
+    margin-bottom: 20px;
+  }
+
+  /* --- Main Content --- */
+  .main-content {
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+  }
+
+  .header-title {
+    font-size: 1.8rem;
+    font-weight: 700;
+    margin-bottom: 10px;
+  }
+
+  .card {
+    background-color: var(--panel-bg);
+    border-radius: var(--border-radius);
+    padding: 24px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+
+  .chart-placeholder {
+    height: 250px;
+    border: 1px dashed #ccc;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 49px,
+      #f0f0f0 49px,
+      #f0f0f0 50px
+    );
+  }
+
+  .appointment-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    border-radius: 16px;
+    margin-bottom: 10px;
+  }
+
+  .appointment-item:nth-child(1) { background-color: var(--accent-green); }
+  .appointment-item:nth-child(2) { background-color: var(--accent-blue); }
+
+  .avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    background-color: #ccc;
+  }
+
+  .btn-dark {
+    background-color: var(--text-main);
+    color: white;
+    border: none;
+    padding: 15px;
+    width: 100%;
+    border-radius: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+
+  /* --- Right Panel --- */
+  .right-panel {
+    padding: 30px 30px 30px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+  }
+
+  .search-bar {
+    background-color: var(--panel-bg);
+    padding: 12px 20px;
+    border-radius: 20px;
+    border: none;
+    width: 100%;
+    outline: none;
+  }
+
+  .treatment-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    border-radius: 16px;
+    margin-bottom: 10px;
+  }
+
+  .pill-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(0,0,0,0.05);
+  }
+
+  .treatment-item:nth-child(1) { background-color: var(--accent-blue); }
+  .treatment-item:nth-child(2) { background-color: var(--accent-green); }
+  .treatment-item:nth-child(3) { background-color: var(--accent-yellow); }
+
+</style>
+</head>
+<body>
+
+<div class="app-container">
+  
+  <aside class="sidebar">
+    <div class="logo">
+      <div class="logo-icon"></div>
+      MediApp Pro
+    </div>
+    
+    <div class="nav-section">
+      <div class="nav-title">General</div>
+      <div class="nav-item active">Dashboard</div>
+      <div class="nav-item">Calendar</div>
+      <div class="nav-item">Appointments <span class="badge">1</span></div>
+      <div class="nav-item">Statistics</div>
+    </div>
+    
+    <div class="nav-section" style="margin-top: 10px;">
+      <div class="nav-title">Tools</div>
+      <div class="nav-item">Chats <span class="badge">2</span></div>
+      <div class="nav-item">Settings</div>
+      <div class="nav-item">Notifications <span class="badge">1</span></div>
+    </div>
+
+    <div class="promo-card">
+      <h3>Take control of your health with MediApp</h3>
+      <p style="font-size: 0.8rem;">Subscribe<br>for $10.00 / month</p>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <h1 class="header-title">Dashboard</h1>
+    
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2>My parameters</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Track key health metrics over time</p>
+        </div>
+        <button style="border:none; background:#f0f0f0; border-radius:50%; width:30px; height:30px;">+</button>
+      </div>
+      <div class="chart-placeholder">
+        [ Chart Area: Implement Chart.js or D3.js here ]
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2>My appointments</h2>
+          <p style="color: var(--text-muted); font-size: 0.9rem;">Scheduled visits and consultations</p>
+        </div>
+      </div>
+      
+      <div class="appointment-item">
+        <div class="avatar"></div>
+        <div style="flex-grow: 1;">
+          <h4 style="margin-bottom: 4px;">Cardiologist</h4>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">02.00 PM - 02.40 PM</p>
+          <p style="font-size: 0.8rem; color: var(--text-main);">Dr. Richard Michels</p>
+        </div>
+      </div>
+      
+      <div class="appointment-item">
+        <div class="avatar"></div>
+        <div style="flex-grow: 1;">
+          <h4 style="margin-bottom: 4px;">Dentist</h4>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">11.00 AM - 12.00 PM</p>
+          <p style="font-size: 0.8rem; color: var(--text-main);">Dr. Marie Jordan</p>
+        </div>
+      </div>
+
+      <button class="btn-dark">+ New Appointment</button>
+    </div>
+  </main>
+
+  <aside class="right-panel">
+    <input type="text" class="search-bar" placeholder="Search...">
+    
+    <div class="card" style="background-color: var(--accent-green);">
+      <h2>Calendar</h2>
+      <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 15px;">August, 12</p>
+      <div style="text-align: center; color: var(--text-muted); font-size: 0.9rem;">
+        [ Calendar Widget Placeholder ]
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2>My treatment</h2>
+          <p style="color: var(--text-muted); font-size: 0.85rem;">Current medications</p>
+        </div>
+      </div>
+
+      <div class="treatment-item">
+        <div class="pill-icon">💊</div>
+        <div>
+          <h4>Ibuprofen</h4>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">2 times per day</p>
+        </div>
+      </div>
+
+      <div class="treatment-item">
+        <div class="pill-icon">💊</div>
+        <div>
+          <h4>Vitamin B12</h4>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">1 time per day</p>
+        </div>
+      </div>
+
+      <div class="treatment-item">
+        <div class="pill-icon">💊</div>
+        <div>
+          <h4>Faringosept</h4>
+          <p style="font-size: 0.8rem; color: var(--text-muted);">4 times per day</p>
+        </div>
+      </div>
+      
+      <button class="btn-dark" style="background:#f0f0f0; color:var(--text-main);">+ New Medication</button>
+    </div>
+  </aside>
+
+</div>
+
+</body>
+</html>

@@ -1,0 +1,58 @@
+# Node / Frontend
+node_modules/
+build/
+dist/
+.DS_Store
+
+# Environments / Secrets (API Keys)
+.env
+.env.*
+!.env.example
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Databases
+*.db
+*.sqlite
+*.sqlite3
+*.db3
+*.s3db
+*.db-shm
+*.db-wal
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Uploads / Data
+uploads/
+data/
+
+# IDE / Editor
+.vscode/
+.idea/
+.history/

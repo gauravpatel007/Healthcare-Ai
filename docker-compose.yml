@@ -1,0 +1,71 @@
+services:
+  # ─── PostgreSQL Database ──────────────────────────────────────────
+  db:
+    image: postgres:16-alpine
+    container_name: lifeos_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: lifeos
+      POSTGRES_PASSWORD: lifeos_secret
+      POSTGRES_DB: lifeos_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U lifeos -d lifeos_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─── FastAPI Backend ──────────────────────────────────────────────
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: lifeos_app
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://lifeos:lifeos_secret@db:5432/lifeos_db
+      SECRET_KEY: ${SECRET_KEY:-change-this-to-a-random-secret-key-in-production}
+      ALGORITHM: HS256
+      ACCESS_TOKEN_EXPIRE_MINUTES: 30
+      REFRESH_TOKEN_EXPIRE_DAYS: 7
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      GROQ_MODEL: ${GROQ_MODEL:-llama-3.3-70b-versatile}
+      UPLOAD_DIR: /app/uploads
+      MAX_FILE_SIZE_MB: 10
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000,http://localhost:5500,http://127.0.0.1:5500}
+      DEBUG: ${DEBUG:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      - upload_data:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    command: >
+      sh -c "
+        alembic upgrade head 2>/dev/null || echo 'Alembic migration skipped (tables auto-created in DEBUG)' &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  # ─── Chatbot Backend (Flask) ──────────────────────────────────────
+  chatbot:
+    build:
+      context: ./backend/chatbot
+      dockerfile: Dockerfile
+    container_name: lifeos_chatbot
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    environment:
+      - PINECONE_API_KEY=${PINECONE_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+
+volumes:
+  postgres_data:
+    driver: local
+  upload_data:
+    driver: local
