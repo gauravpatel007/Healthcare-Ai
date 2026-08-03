@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     GROQ_MODEL: str = "llama-3.3-70b-versatile"
 
     # --- Google Sign In ---
-    GOOGLE_CLIENT_ID: str = "749609290729-7p9u9ujo98odpldasobtvqascmvejumb.apps.googleusercontent.com"
+    GOOGLE_CLIENT_ID: str = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com"
 
     # --- Fitbit Integration ---
     FITBIT_CLIENT_ID: str = ""
