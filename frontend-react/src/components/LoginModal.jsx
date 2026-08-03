@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import API from '../utils/api';
 import { useSettings } from '../contexts/SettingsContext';
 
-const GOOGLE_CLIENT_ID = '749609290729-7p9u9ujo98odpldasobtvqascmvejumb.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com';
 
 const LoginModal = ({ show, onClose }) => {
   const { settings } = useSettings();
