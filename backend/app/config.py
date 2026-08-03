@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     LOG_LEVEL: str = "INFO"
 
     # --- Database ---
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:1234@localhost:5432/lifeos_db"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:xxxx@localhost:xxxx/lifeos_db"
 
     # --- JWT Authentication ---
     SECRET_KEY: str = "change-this-to-a-random-secret-key-in-production"
