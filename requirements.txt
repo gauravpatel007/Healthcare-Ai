@@ -1,0 +1,39 @@
+# FastAPI & ASGI
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+python-multipart==0.0.20
+
+# Database
+sqlalchemy==2.0.36
+asyncpg==0.30.0
+alembic==1.14.1
+greenlet
+
+# Authentication
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.2.1
+google-auth==2.37.0
+
+# Validation & Settings
+pydantic[email]==2.10.4
+pydantic-settings==2.7.1
+
+# AI
+groq==0.15.0
+
+# Utilities
+python-dotenv==1.0.1
+aiofiles==24.1.0
+httpx==0.28.1
+pymupdf==1.25.1
+
+# Logging
+python-json-logger==3.2.1
+
+# Export Data
+openpyxl==3.1.2
+fpdf2==2.7.9
+
+# Twilio SMS
+twilio==9.4.4

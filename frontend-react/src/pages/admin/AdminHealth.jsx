@@ -1,0 +1,377 @@
+import React, { useState, useEffect } from 'react';
+import { Calendar, Activity, Loader2, X, Clock, Mail, PhoneCall, Bot } from 'lucide-react';
+import API from '../../utils/api';
+
+const AdminHealth = () => {
+  const [data, setData] = useState({ appointments: [], emergencies: [], triageLogs: [] });
+  const [loading, setLoading] = useState(true);
+
+  // Modals state
+  const [showViewAll, setShowViewAll] = useState(false);
+  const [rescheduleAppt, setRescheduleAppt] = useState(null); // { id, date, time }
+  const [rescheduleData, setRescheduleData] = useState({ date: '', time: '' });
+
+  const fetchData = async () => {
+    try {
+      setLoading(true);
+      const [servicesRes, triageRes] = await Promise.all([
+        API.get('/admin/health-services'),
+        API.getAdminTriageLogs()
+      ]);
+      setData({ ...servicesRes, triageLogs: triageRes });
+    } catch (err) {
+      console.error("Failed to fetch health services data:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const formatTimeAgo = (dateStr) => {
+    const date = new Date(dateStr);
+    const diff = Math.floor((new Date() - date) / 60000);
+    if (diff < 1) return 'Just now';
+    if (diff < 60) return `${diff} mins ago`;
+    if (diff < 24 * 60) return `${Math.floor(diff/60)} hours ago`;
+    return date.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+  };
+
+  const formatDateLabel = (dateStr) => {
+    if (!dateStr) return { day: '--', month: '---' };
+    const date = new Date(dateStr);
+    return {
+      day: date.getDate(),
+      month: date.toLocaleString('default', { month: 'short' })
+    };
+  };
+
+  const handleResolveEmergency = async (id) => {
+    try {
+      await API.put(`/admin/emergencies/${id}/resolve`);
+      fetchData(); // refresh
+    } catch (err) {
+      console.error("Failed to resolve emergency", err);
+      alert("Failed to resolve emergency.");
+    }
+  };
+
+  const handleRescheduleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await API.put(`/admin/appointments/${rescheduleAppt.id}/reschedule`, {
+        date: rescheduleData.date,
+        time: rescheduleData.time + ":00" // append seconds if needed
+      });
+      setRescheduleAppt(null);
+      fetchData();
+    } catch (err) {
+      console.error("Failed to reschedule", err);
+      alert("Failed to reschedule appointment.");
+    }
+  };
+
+  if (loading && data.appointments.length === 0) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6 animate-in fade-in duration-500 relative">
+      
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Healthcare Services</h1>
+          <p className="text-gray-500 dark:text-gray-400">Manage appointments and emergency alerts.</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        {/* Appointments Module */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6">
+          <div className="flex justify-between items-center mb-6">
+             <h3 className="text-lg font-bold flex items-center">
+              <Calendar className="w-5 h-5 mr-2 text-blue-500" /> Upcoming Appointments
+            </h3>
+            <button onClick={() => setShowViewAll(true)} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">View All</button>
+          </div>
+          
+          <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+            {data.appointments.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No upcoming appointments found.</p>
+            ) : (
+              data.appointments.slice(0, 5).map((appt) => {
+                const dateLabel = formatDateLabel(appt.date);
+                return (
+                  <div key={appt.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700">
+                    <div className="flex items-center gap-4 truncate">
+                      <div className="w-10 h-10 shrink-0 rounded-full bg-blue-100 dark:bg-blue-900/30 flex flex-col items-center justify-center text-blue-600 dark:text-blue-400">
+                        <span className="text-xs font-bold leading-none">{dateLabel.day}</span>
+                        <span className="text-[10px] uppercase leading-none">{dateLabel.month}</span>
+                      </div>
+                      <div className="truncate">
+                        <p className="font-medium text-gray-900 dark:text-white line-clamp-1">{appt.doctor}</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-1">Patient: {appt.user_name} ({appt.user_email})</p>
+                        <p className="text-xs text-gray-400 mt-1 flex items-center"><Clock className="w-3 h-3 mr-1"/> {appt.time} • {appt.reason}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2 shrink-0">
+                      <button onClick={() => setRescheduleAppt(appt)} className="px-3 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg text-xs font-medium hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700">Reschedule</button>
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
+
+        {/* Emergency Alerts Module */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-red-100 dark:border-red-900/30 shadow-sm p-6 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-bl-full -z-10"></div>
+          <div className="flex justify-between items-center mb-6">
+             <h3 className="text-lg font-bold flex items-center text-red-600 dark:text-red-400">
+              <Activity className="w-5 h-5 mr-2" /> Active Emergencies
+            </h3>
+            {data.emergencies.length > 0 && (
+              <span className="bg-red-100 text-red-600 dark:text-red-400 dark:bg-red-900/40 dark:text-red-400 text-xs font-bold px-3 py-1 rounded-full relative">
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-ping opacity-75"></span>
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+                {data.emergencies.length} Active
+              </span>
+            )}
+          </div>
+          
+          <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+            {data.emergencies.length === 0 ? (
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No active emergencies found.</p>
+            ) : (
+              data.emergencies.map((sos) => (
+                <div key={sos.id} className="p-4 bg-red-50 dark:bg-red-900/30 dark:bg-red-900/10 border border-red-100 dark:border-red-900/30 rounded-xl">
+                  <div className="flex justify-between items-start mb-2">
+                    <h4 className="font-bold text-red-800 dark:text-red-300">SOS: {sos.user_name}</h4>
+                    <span className="text-xs text-red-500 whitespace-nowrap ml-2 font-medium">{formatTimeAgo(sos.created_at)}</span>
+                  </div>
+                  <p className="text-sm text-red-700 dark:text-red-400 mb-2">
+                    User pressed the emergency button {sos.is_silent ? '(Silent SOS)' : ''}.
+                  </p>
+                  <p className="text-xs text-red-600 dark:text-red-400 dark:text-red-500 mb-4 flex gap-3">
+                    <span className="flex items-center"><Mail className="w-3 h-3 mr-1"/> {sos.user_email}</span>
+                    <span className="flex items-center"><PhoneCall className="w-3 h-3 mr-1"/> {sos.user_phone}</span>
+                  </p>
+                  <div className="flex gap-2">
+                    <button onClick={() => window.location.href = `mailto:${sos.user_email}`} className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm font-medium transition-colors">
+                      Contact User
+                    </button>
+                    <button onClick={() => handleResolveEmergency(sos.id)} className="flex-1 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 py-2 rounded-lg text-sm font-medium hover:bg-red-50 dark:hover:bg-red-900/30 dark:bg-red-900/30 dark:hover:bg-red-900/30 dark:bg-red-900/30 dark:hover:bg-red-900/30 dark:bg-red-900/30 dark:hover:bg-red-900/20 transition-colors">
+                      Resolve Alert
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+        
+      </div>
+
+      {/* Bottom Grid: AI Triage & Organ Donors */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+        {/* AI Triage Logs Module */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-purple-100 dark:border-purple-900/30 shadow-sm p-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-bl-full -z-10"></div>
+        <div className="flex justify-between items-center mb-6">
+           <h3 className="text-lg font-bold flex items-center text-purple-600 dark:text-purple-400">
+            <Bot className="w-5 h-5 mr-2" /> AI Triage Logs
+          </h3>
+        </div>
+        
+        <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+          {data.triageLogs?.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No AI triage logs found.</p>
+          ) : (
+            data.triageLogs?.map((log) => (
+              <div key={log.id} className="p-4 bg-purple-50 dark:bg-purple-900/10 border border-purple-100 dark:border-purple-900/30 rounded-xl">
+                <div className="flex justify-between items-start mb-2">
+                  <h4 className="font-bold text-purple-800 dark:text-purple-300 flex items-center gap-2">
+                    {log.user_name} 
+                    <span className="font-normal text-purple-600 dark:text-purple-400">({log.user_email})</span>
+                  </h4>
+                  <span className="text-xs text-purple-500 whitespace-nowrap ml-2 font-medium">
+                    {formatTimeAgo(log.created_at)}
+                  </span>
+                </div>
+                
+                <div className="mt-3 text-sm text-gray-700 dark:text-gray-300">
+                  <p className="mb-2"><span className="font-bold">Symptom Query:</span> "{log.symptom}"</p>
+                  
+                  {log.response?.urgency && (
+                    <p className="mb-1">
+                      <span className="font-bold">AI Urgency:</span> 
+                      <span className={`ml-2 px-2 py-0.5 rounded text-xs font-bold ${log.response.urgency === 'High' ? 'bg-red-100 text-red-700' : log.response.urgency === 'Medium' ? 'bg-orange-100 text-orange-700' : 'bg-green-100 text-green-700'}`}>
+                        {log.response.urgency}
+                      </span>
+                    </p>
+                  )}
+                  {log.response?.conditions?.length > 0 && (
+                    <p>
+                      <span className="font-bold">Top Match:</span> {log.response.conditions[0].condition} ({log.response.conditions[0].probability}%)
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+        </div>
+
+        {/* Registered Organ Donors Module */}
+        <div className="bg-white dark:bg-gray-800 rounded-2xl border border-teal-100 dark:border-teal-900/30 shadow-sm p-6 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/10 rounded-bl-full -z-10"></div>
+        <div className="flex justify-between items-center mb-6">
+           <h3 className="text-lg font-bold flex items-center text-teal-600 dark:text-teal-400">
+            <Activity className="w-5 h-5 mr-2" /> Registered Organ Donors
+          </h3>
+        </div>
+        
+        <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+          {!data.organ_donors || data.organ_donors.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">No registered organ donors found.</p>
+          ) : (
+            data.organ_donors.map((donor) => (
+              <div key={donor.id} className="p-4 bg-teal-50 dark:bg-teal-900/10 border border-teal-100 dark:border-teal-900/30 rounded-xl flex flex-col justify-start items-start text-left gap-3 w-full">
+                <div className="flex flex-col lg:flex-row justify-between items-start w-full gap-3">
+                  <div className="flex flex-col items-start text-left">
+                    <h4 className="font-bold text-teal-900 dark:text-teal-100 flex items-center justify-start gap-2 text-left">
+                      {donor.name} 
+                      <span className="text-xs font-bold px-2 py-0.5 rounded bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-300">
+                        Blood: {donor.blood_type || 'Unknown'}
+                      </span>
+                    </h4>
+                    <p className="text-sm text-teal-700 dark:text-teal-400 mt-1 flex flex-wrap items-center justify-start gap-4 text-left w-full">
+                      <span className="flex items-center"><Mail className="w-3 h-3 inline mr-1"/> {donor.email}</span>
+                      <span>Age: {donor.age || 'N/A'}</span>
+                    </p>
+                  </div>
+                  {donor.registered_date && (
+                    <div className="self-start text-xs font-medium text-teal-600 dark:text-teal-400 bg-white/60 dark:bg-gray-800/60 px-3 py-1 rounded-full border border-teal-100 dark:border-teal-800 shrink-0">
+                      Registered: {formatTimeAgo(donor.registered_date)}
+                    </div>
+                  )}
+                </div>
+                
+                <div className="mt-1 w-full border-t border-teal-200/50 dark:border-teal-800/50 pt-3 flex flex-col items-start">
+                  <p className="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider mb-2 text-left w-full">Pledged Organs</p>
+                  <div className="flex flex-wrap gap-2 justify-start w-full">
+                    {donor.preferences && donor.preferences.length > 0 ? (
+                      donor.preferences.map(org => (
+                        <span key={org} className="text-xs font-medium px-2.5 py-1 bg-white dark:bg-gray-800 border border-teal-200 dark:border-teal-700 rounded-lg shadow-sm text-gray-700 dark:text-gray-300">
+                          {org}
+                        </span>
+                      ))
+                    ) : (
+                      <span className="text-xs text-gray-500 italic text-left">General Donor</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+        </div>
+      </div>
+
+      {/* Reschedule Modal */}
+      {rescheduleAppt && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-md w-full p-6 shadow-xl relative">
+            <button onClick={() => setRescheduleAppt(null)} className="absolute top-4 right-4 p-2 text-gray-400 hover:bg-gray-100 dark:bg-gray-700 rounded-full">
+              <X className="w-5 h-5" />
+            </button>
+            <h2 className="text-xl font-bold mb-4">Reschedule Appointment</h2>
+            <div className="mb-4 text-sm text-gray-600 dark:text-gray-400">
+              <p><span className="font-bold">Doctor:</span> {rescheduleAppt.doctor}</p>
+              <p><span className="font-bold">Patient:</span> {rescheduleAppt.user_name}</p>
+              <p><span className="font-bold">Current:</span> {rescheduleAppt.date} at {rescheduleAppt.time}</p>
+            </div>
+            <form onSubmit={handleRescheduleSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">New Date</label>
+                <input 
+                  type="date" 
+                  required
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={rescheduleData.date}
+                  onChange={e => setRescheduleData({...rescheduleData, date: e.target.value})}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1">New Time</label>
+                <input 
+                  type="time" 
+                  required
+                  className="w-full px-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none"
+                  value={rescheduleData.time}
+                  onChange={e => setRescheduleData({...rescheduleData, time: e.target.value})}
+                />
+              </div>
+              <button type="submit" className="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold">
+                Confirm Reschedule
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View All Appointments Modal */}
+      {showViewAll && (
+        <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl max-w-4xl w-full flex flex-col shadow-xl h-[80vh]">
+            <div className="p-6 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center">
+              <div>
+                <h2 className="text-xl font-bold">All Appointments</h2>
+                <p className="text-sm text-gray-500 dark:text-gray-400">Showing all pending appointments</p>
+              </div>
+              <button onClick={() => setShowViewAll(false)} className="p-2 text-gray-400 hover:bg-gray-100 dark:bg-gray-700 rounded-full">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 space-y-4">
+              {data.appointments.map((appt) => {
+                const dateLabel = formatDateLabel(appt.date);
+                return (
+                  <div key={appt.id} className="flex flex-col md:flex-row md:items-center justify-between p-4 bg-gray-50 dark:bg-gray-900/50 rounded-xl border border-gray-100 dark:border-gray-700 gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 shrink-0 rounded-full bg-blue-100 dark:bg-blue-900/30 flex flex-col items-center justify-center text-blue-600 dark:text-blue-400">
+                        <span className="text-sm font-bold leading-none">{dateLabel.day}</span>
+                        <span className="text-[10px] uppercase leading-none">{dateLabel.month}</span>
+                      </div>
+                      <div>
+                        <p className="font-bold text-gray-900 dark:text-white text-lg">{appt.doctor}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">Patient: {appt.user_name} ({appt.user_email})</p>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center"><Clock className="w-4 h-4 mr-1.5 text-gray-400"/> {appt.time} • {appt.reason}</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-3 shrink-0">
+                      <button onClick={() => { setShowViewAll(false); setRescheduleAppt(appt); }} className="px-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-bold hover:bg-gray-50 dark:bg-gray-900 dark:hover:bg-gray-700 transition-colors">Reschedule</button>
+                    </div>
+                  </div>
+                )
+              })}
+              {data.appointments.length === 0 && <p className="text-center text-gray-500 dark:text-gray-400 py-10">No pending appointments.</p>}
+            </div>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+};
+
+export default AdminHealth;
