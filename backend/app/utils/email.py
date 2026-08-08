@@ -5,6 +5,7 @@ Utility to send secure emails via SMTP (e.g., Gmail).
 
 import smtplib
 import logging
+from typing import List, Optional
 from email.message import EmailMessage
 from app.config import get_settings
 
@@ -143,7 +144,7 @@ def send_login_alert_email(recipient_email: str, ip_address: str, user_agent: st
         logger.error(f"Failed to send login alert to {recipient_email}: {str(e)}")
         return False
 
-def send_sos_email(recipient_emails: list[str], user_name: str, location_url: str | None = None) -> bool:
+def send_sos_email(recipient_emails: List[str], user_name: str, location_url: Optional[str] = None) -> bool:
     """
     Sends an SOS emergency email to the provided list of contact emails.
     """
@@ -244,7 +245,7 @@ def send_sos_email(recipient_emails: list[str], user_name: str, location_url: st
         logger.error(f"Failed to send SOS email: {str(e)}")
         return False
 
-def send_sos_sms_twilio(phone_numbers: list[str], user_name: str, location_url: str | None = None) -> bool:
+def send_sos_sms_twilio(phone_numbers: List[str], user_name: str, location_url: Optional[str] = None) -> bool:
     """
     Sends an SOS SMS via Twilio.
     """
@@ -258,6 +259,7 @@ def send_sos_sms_twilio(phone_numbers: list[str], user_name: str, location_url: 
         return True
         
     try:
+        # pyrefly: ignore [missing-import]
         from twilio.rest import Client
         client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
         
@@ -286,7 +288,7 @@ def send_sos_sms_twilio(phone_numbers: list[str], user_name: str, location_url: 
         logger.error(f"Failed to connect to Twilio: {str(e)}")
         return False
 
-def send_sos_call_twilio(phone_numbers: list[str], user_name: str, location_url: str | None = None) -> bool:
+def send_sos_call_twilio(phone_numbers: List[str], user_name: str, location_url: Optional[str] = None) -> bool:
     """
     Initiates an automated voice call via Twilio.
     """
@@ -299,16 +301,18 @@ def send_sos_call_twilio(phone_numbers: list[str], user_name: str, location_url:
         return True
         
     try:
+        # pyrefly: ignore [missing-import]
         from twilio.rest import Client
         client = Client(settings.TWILIO_ACCOUNT_SID, settings.TWILIO_AUTH_TOKEN)
         
-        twiml_url = "http://demo.twilio.com/docs/voice.xml" # Replace with your own TwiML URL
+        twiml_content = f"<Response><Say voice='alice' language='en-US'>Emergency Alert. {user_name} has an emergency. Immediately go there or check the sent text message for location details.</Say></Response>"
+        
         success_count = 0
         for number in phone_numbers:
             try:
                 formatted_number = number if number.startswith('+') else f"+{number}"
                 call = client.calls.create(
-                    url=twiml_url,
+                    twiml=twiml_content,
                     to=formatted_number,
                     from_=settings.TWILIO_FROM_NUMBER
                 )

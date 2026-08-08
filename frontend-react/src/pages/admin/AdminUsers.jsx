@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { 
-  Search, Filter, Shield, User, Trash2, Power, UserPlus, X, 
+  Search, Filter, Shield, User, Users, Trash2, Power, UserPlus, X, 
   Edit3, Key, Mail, Phone, LogIn, Download, FileText, Ban,
   RotateCcw, CheckCircle, AlertTriangle, Eye, ChevronRight
 } from 'lucide-react';
@@ -441,17 +441,28 @@ const AdminUsers = () => {
     <div className="space-y-6 animate-in fade-in duration-500 pb-10">
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-gray-800 dark:bg-gray-800 p-6 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-700">
-        <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">User Management</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium mt-1">Manage patients, doctors, and system administrators.</p>
+      <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 lg:p-8 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-row flex-wrap md:flex-nowrap items-center justify-between gap-4 relative overflow-hidden w-full">
+        <div className="flex items-center gap-4 lg:gap-6 relative z-10 w-auto">
+          <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
+            <Users className="w-8 h-8" />
+          </div>
+          <div className="text-left">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-1 text-left">
+              User Management
+            </h1>
+            <p className="text-xs sm:text-sm lg:text-base text-gray-500 dark:text-gray-400 font-medium flex items-center gap-2 text-left">
+              Manage patients, doctors, and system administrators.
+            </p>
+          </div>
         </div>
-        <button 
-          onClick={() => setShowAddModal(true)}
-          className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
-        >
-          <UserPlus className="w-5 h-5" /> Add User
-        </button>
+        <div className="flex items-center justify-end gap-3 relative z-10 shrink-0 ml-auto pr-2 flex-wrap">
+          <button 
+            onClick={() => setShowAddModal(true)}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-3 rounded-xl font-bold transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+          >
+            <UserPlus className="w-5 h-5" /> Add User
+          </button>
+        </div>
       </div>
 
       {/* Table Card */}

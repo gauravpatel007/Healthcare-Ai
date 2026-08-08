@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import API from '../utils/api';
+import { toast } from 'react-hot-toast';
 import { Moon, Scale, Watch, Activity, HeartPulse, Footprints, Flame } from 'lucide-react';
 
 /* ─── Section Header (same as Dashboard) ──────────── */
@@ -84,14 +85,14 @@ const Trackers = () => {
         try {
           const res = await API.post('/trackers/fitbit/callback', { code });
           if (res.success) {
-            alert('✅ Successfully linked real Fitbit account!');
+            toast.success('✅ Successfully linked real Fitbit account!');
             setConnectedDevices(prev => ({ ...prev, 'Fitbit': true }));
           } else {
-            alert(`Fitbit Connection Failed: ${res.message}`);
+            toast.error(`Fitbit Connection Failed: ${res.message}`);
           }
         } catch (e) {
           console.error("Fitbit token exchange error:", e);
-          alert('Failed to connect Fitbit account.');
+          toast.error('Failed to connect Fitbit account.');
         }
       };
       exchangeCode();
@@ -170,7 +171,7 @@ const Trackers = () => {
 
   const handleLogSleep = async () => {
     if (!bedtime || !waketime) {
-      alert("Please select both bedtime and wake time.");
+      toast.error("Please select both bedtime and wake time.");
       return;
     }
     const [bh, bm] = bedtime.split(':').map(Number);
@@ -187,11 +188,11 @@ const Trackers = () => {
     try {
       const added = await API.post('/trackers/sleep', sleepEntry);
       setSleepData(prev => [added, ...prev]);
-      alert(`Sleep logged: ${sleepEntry.hours.toFixed(1)} hours`);
+      toast.success(`Sleep logged: ${sleepEntry.hours.toFixed(1)} hours`);
     } catch (e) {
       console.error("Sleep log error:", e);
       const msg = e.response?.data?.detail || e.message;
-      alert(`Failed to log sleep: ${msg}`);
+      toast.error(`Failed to log sleep: ${msg}`);
     }
   };
 
@@ -205,16 +206,18 @@ const Trackers = () => {
           return;
         }
       }
-      alert(`⌚ Connecting to ${name} (Simulation fallback)...`);
+      toast.loading(`⌚ Connecting to ${name} (Simulation fallback)...`);
       try {
         const res = await API.post('/trackers/wearable/connect', { device_name: name });
         if (res.success) {
           setConnectedDevices(prev => ({ ...prev, [name]: true }));
-          alert(`✅ Successfully connected to ${name}!`);
+          toast.dismiss();
+          toast.success(`✅ Successfully connected to ${name}!`);
         }
       } catch (e) {
         console.error("Wearable connect error:", e);
-        alert(`Failed to connect ${name}.`);
+        toast.dismiss();
+        toast.error(`Failed to connect ${name}.`);
       }
     }
   };
@@ -224,10 +227,10 @@ const Trackers = () => {
     try {
       const res = await API.get('/trackers/wearable/sync');
       setSyncedWearableData(res);
-      alert('🔄 Data successfully synced from wearables!');
+      toast.success('🔄 Data successfully synced from wearables!');
     } catch (e) {
       console.error("Wearable sync error:", e);
-      alert('Failed to sync wearable data.');
+      toast.error('Failed to sync wearable data.');
     } finally {
       setSyncingWearable(false);
     }

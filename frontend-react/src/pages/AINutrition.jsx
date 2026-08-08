@@ -14,11 +14,18 @@ import {
   Clock,
   ChevronRight,
   Activity,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
+import MedicalDisclaimer from '../components/MedicalDisclaimer';
 
-const StatCard = ({ title, value, subtitle, icon: Icon, colorClass }) => (
-  <div className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 relative overflow-hidden group cursor-pointer">
+const StatCard = ({ title, value, subtitle, icon: Icon, colorClass, onClick }) => (
+  <div 
+    onClick={onClick}
+    tabIndex={0}
+    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(e); } }}
+    className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 relative overflow-hidden group cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
+  >
     <div className={`absolute top-0 right-0 w-32 h-32 ${colorClass} opacity-10 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110`}></div>
     <div className="flex items-start justify-between relative z-10">
       <div>
@@ -62,9 +69,21 @@ const AINutrition = ({ voiceAction, onVoiceActionConsumed }) => {
     try {
       const res = await API.post('/ai/nutrition/regenerate');
       setNutritionPlan(res);
-      // Optional: Add a toast notification here instead of alert if a toast system exists
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleDeleteMeal = async (mealId) => {
+    try {
+      if (!mealId) return;
+      await API.delete(`/ai/nutrition/scan/${mealId}`);
+      setNutritionPlan(prev => ({
+        ...prev,
+        meals: prev.meals.map(m => m.id === mealId ? { ...m, is_deleted: true } : m)
+      }));
+    } catch (e) {
+      console.error("Failed to delete meal:", e);
     }
   };
 
@@ -119,16 +138,20 @@ const AINutrition = ({ voiceAction, onVoiceActionConsumed }) => {
             if (res && res.data) {
               setNutritionPlan(prev => ({
                 ...prev,
-                tdee: prev.tdee + res.data.calories,
-                protein_goal_grams: prev.protein_goal_grams + res.data.protein,
+                tdee: prev.tdee + (res.data.calories || 0),
+                protein_goal_grams: prev.protein_goal_grams + (res.data.protein || 0),
                 meals: [
                   ...prev.meals,
                   {
+                    id: res.data.id || Math.random().toString(36).substr(2, 9),
                     meal_type: "scanned snack",
                     time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
                     name: res.data.name,
                     calories: res.data.calories,
                     protein: res.data.protein,
+                    carbs: res.data.carbs || 0,
+                    fats: res.data.fats || 0,
+                    is_deleted: false,
                     icon: "📸"
                   }
                 ]
@@ -190,11 +213,10 @@ const AINutrition = ({ voiceAction, onVoiceActionConsumed }) => {
     return meal.time;
   };
 
-  // Helper to calculate percentages for the progress bars
   const carbsGrams = nutritionPlan.macro_breakdown?.carbs?.grams || 0;
   const proteinGrams = nutritionPlan.macro_breakdown?.protein?.grams || 0;
   const fatsGrams = nutritionPlan.macro_breakdown?.fats?.grams || 0;
-  const totalGrams = carbsGrams + proteinGrams + fatsGrams || 1; // Avoid div by zero
+  const totalGrams = carbsGrams + proteinGrams + fatsGrams || 1;
 
   const carbsPct = Math.round((carbsGrams / totalGrams) * 100);
   const proteinPct = Math.round((proteinGrams / totalGrams) * 100);
@@ -203,7 +225,6 @@ const AINutrition = ({ voiceAction, onVoiceActionConsumed }) => {
   return (
     <div className="max-w-7xl mx-auto space-y-6 pb-20">
 
-      {/* Scan Result Modal */}
       {scanResult && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-gray-800 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-gray-100 dark:border-gray-700 animate-in zoom-in-95 duration-300">
@@ -253,7 +274,6 @@ const AINutrition = ({ voiceAction, onVoiceActionConsumed }) => {
         </div>
       )}
 
-      {/* Full Screen Image Modal */}
       {selectedImage && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={() => setSelectedImage(null)}>
           <button 
@@ -271,7 +291,6 @@ const AINutrition = ({ voiceAction, onVoiceActionConsumed }) => {
         </div>
       )}
 
-      {/* Header */}
       <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 lg:p-8 shadow-sm border border-gray-100 dark:border-gray-700">
         <div className="flex justify-between items-center w-full gap-6">
           <div className="flex items-center gap-5">
@@ -312,6 +331,8 @@ const AINutrition = ({ voiceAction, onVoiceActionConsumed }) => {
         </div>
       </div>
 
+      <MedicalDisclaimer />
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
         <StatCard
           title="Daily Calories"
@@ -348,7 +369,6 @@ const AINutrition = ({ voiceAction, onVoiceActionConsumed }) => {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-        {/* Left Column: Today's Meal Plan */}
         <div className="lg:col-span-2">
           <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 lg:p-8 shadow-sm border border-gray-100 dark:border-gray-700">
             <h3 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2 mb-6">
@@ -358,25 +378,32 @@ const AINutrition = ({ voiceAction, onVoiceActionConsumed }) => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {mealCards.map((m, i) => (
-                <div key={i} className="flex flex-col p-5 rounded-[2rem] bg-gray-50 hover:bg-gray-100 dark:bg-gray-900/50 dark:hover:bg-gray-800 transition-all border border-transparent hover:border-gray-200 dark:hover:border-gray-700 group cursor-pointer hover:-translate-y-1 hover:shadow-md">
+                <div key={i} className={`flex flex-col p-5 rounded-[2rem] bg-gray-50 hover:bg-gray-100 dark:bg-gray-900/50 dark:hover:bg-gray-800 transition-all border border-transparent hover:border-gray-200 dark:hover:border-gray-700 group cursor-pointer hover:-translate-y-1 hover:shadow-md ${m.is_deleted ? 'opacity-50 grayscale' : ''}`}>
                   <div className="flex items-center justify-between mb-4">
                     <div 
                       className={`w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-2xl flex items-center justify-center shadow-inner shrink-0 overflow-hidden ${m.image_url ? 'cursor-pointer' : ''}`}
-                      onClick={() => m.image_url && setSelectedImage(`http://127.0.0.1:8000${m.image_url}`)}
+                      onClick={() => m.image_url && setSelectedImage(API.getMediaUrl(m.image_url))}
                     >
                       {m.image_url ? (
-                        <img src={`http://127.0.0.1:8000${m.image_url}`} alt={m.name} className="w-full h-full object-cover" />
+                        <img src={API.getMediaUrl(m.image_url)} alt={m.name} className="w-full h-full object-cover" />
                       ) : (
                         m.icon
                       )}
                     </div>
-                    <span className="px-4 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-1">
-                      <Clock className="w-3 h-3" /> {formatMealTime(m)}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      {m.meal_type?.toLowerCase() === 'scanned snack' && !m.is_deleted && m.id && (
+                        <button onClick={() => handleDeleteMeal(m.id)} className="p-1.5 rounded-lg text-rose-400 hover:bg-rose-50 hover:text-rose-600 transition-colors">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      )}
+                      <span className="px-4 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-400 border border-gray-100 dark:border-gray-700 shadow-sm flex items-center gap-1">
+                        <Clock className="w-3 h-3" /> {formatMealTime(m)}
+                      </span>
+                    </div>
                   </div>
                   <div className="mb-4">
                     <div className="text-xs font-bold text-indigo-500 uppercase tracking-wider mb-1">{m.meal_type}</div>
-                    <h4 className="font-bold text-gray-900 dark:text-white text-lg leading-tight">{m.name}</h4>
+                    <h4 className={`font-bold text-gray-900 dark:text-white text-lg leading-tight ${m.is_deleted ? 'line-through text-gray-400' : ''}`}>{m.name}</h4>
                   </div>
                   <div className="mt-auto grid grid-cols-2 gap-2">
                     <div className="bg-white dark:bg-gray-800 rounded-xl p-3 flex flex-col items-center justify-center border border-gray-100 dark:border-gray-700 shadow-sm">

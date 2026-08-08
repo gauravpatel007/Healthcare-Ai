@@ -2,7 +2,7 @@
 LifeOS Backend — AI Nutrition Planner Router
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -127,17 +127,22 @@ async def get_nutrition_plan(user_id: CurrentUserId, db: AsyncSession = Depends(
     
     for sm in scanned_meals:
         meals.append({
+            "id": sm.id,
             "meal_type": sm.meal_type or "scanned snack",
             "time": sm.recorded_at.strftime("%I:%M %p") if sm.recorded_at else "Unknown",
             "recorded_at": int(sm.recorded_at.timestamp() * 1000) if sm.recorded_at else None,
             "name": sm.name,
             "calories": sm.calories,
             "protein": sm.protein,
+            "carbs": sm.carbs,
+            "fats": sm.fats,
+            "is_deleted": sm.is_deleted,
             "icon": "📸",
             "image_url": sm.image_url
         })
-        tdee += (sm.calories or 0)
-        protein_goal += (sm.protein or 0)
+        if not sm.is_deleted:
+            tdee += (sm.calories or 0)
+            protein_goal += (sm.protein or 0)
 
 
     macro_breakdown = {
@@ -243,3 +248,18 @@ async def ai_diet_recommendations(user_id: CurrentUserId, db: AsyncSession = Dep
         context=context,
     )
     return {"recommendations": response}
+@router.delete("/nutrition/scan/{meal_id}")
+async def delete_scanned_meal(
+    meal_id: str,
+    user_id: CurrentUserId,
+    db: AsyncSession = Depends(get_db)
+):
+    from app.models.diet import ScannedMeal
+    from sqlalchemy import select
+    result = await db.execute(select(ScannedMeal).where(ScannedMeal.id == meal_id, ScannedMeal.user_id == user_id))
+    meal = result.scalar_one_or_none()
+    if not meal:
+        raise HTTPException(status_code=404, detail="Meal not found")
+    meal.is_deleted = True
+    await db.commit()
+    return {"success": True, "message": "Meal deleted"}

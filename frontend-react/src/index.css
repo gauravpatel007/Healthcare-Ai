@@ -18,6 +18,12 @@
   }
 }
 
+/* Hide focus outlines and rings for mouse users globally */
+:focus:not(:focus-visible) {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 :root {
   /* UI 2.1 Palette */
   --bg-color: #f0f4ff;
@@ -563,16 +569,65 @@ a:hover {
 }
 
 @keyframes float {
-
-  0%,
-  100% {
-    transform: translateY(0);
+  0%, 100% {
+    transform: translateY(0) rotate(-3deg);
   }
-
   50% {
-    transform: translateY(-6px);
+    transform: translateY(-10px) rotate(2deg);
   }
 }
+
+/* Hero contour line animations — different speeds for parallax */
+@keyframes contourDrift1 {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(8px) translateY(-4px); }
+}
+@keyframes contourDrift2 {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(-6px) translateY(3px); }
+}
+@keyframes contourDrift3 {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(5px) translateY(-6px); }
+}
+@keyframes contourDrift4 {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(-10px) translateY(5px); }
+}
+
+/* Hero background glow animation */
+@keyframes heroGlow {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  25% {
+    background-position: 30% 60%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  75% {
+    background-position: 70% 40%;
+  }
+}
+
+/* Staggered entrance animations */
+@keyframes heroFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-entrance-1 { animation: heroFadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.1s both; }
+.hero-entrance-2 { animation: heroFadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.25s both; }
+.hero-entrance-3 { animation: heroFadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.4s both; }
+.hero-entrance-4 { animation: heroFadeUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.55s both; }
+.hero-entrance-5 { animation: heroFadeUp 0.8s cubic-bezier(0.22, 1, 0.36, 1) 0.7s both; }
 
 @keyframes gradientShift {
   0% {
@@ -1088,4 +1143,40 @@ a:hover {
 [data-theme="dark"] .theme-icon-sun {
   opacity: 1;
   transform: translateY(0) rotate(0);
+}
+
+/* === Background Flow Animations === */
+@keyframes contourDrift1 {
+  0% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(-3%) translateY(1%); }
+  100% { transform: translateX(0) translateY(0); }
+}
+
+@keyframes contourDrift2 {
+  0% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(-2%) translateY(-1%); }
+  100% { transform: translateX(0) translateY(0); }
+}
+
+@keyframes contourDrift3 {
+  0% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(-4%) translateY(0.5%); }
+  100% { transform: translateX(0) translateY(0); }
+}
+
+@keyframes contourDrift4 {
+  0% { transform: translateX(0) translateY(0); }
+  50% { transform: translateX(-1.5%) translateY(-0.5%); }
+  100% { transform: translateX(0) translateY(0); }
+}
+
+@keyframes heroGlow {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+@keyframes heroScrollLines {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
 }

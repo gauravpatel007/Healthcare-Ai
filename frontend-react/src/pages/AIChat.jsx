@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import API from '../utils/api';
+import MedicalDisclaimer from '../components/MedicalDisclaimer';
 import { 
   Bot,
   MessageSquare,
@@ -21,7 +22,12 @@ import {
 
 /* ─── Reusable Action Card (Matches Dashboard StatCard) ──────────── */
 const ActionCard = ({ title, value, subtitle, icon: Icon, colorClass, onClick }) => (
-  <div onClick={onClick} className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 relative overflow-hidden group cursor-pointer flex flex-col justify-between h-full">
+  <div 
+    onClick={onClick}
+    tabIndex={0}
+    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(e); } }}
+    className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 relative overflow-hidden group cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500 flex flex-col justify-between h-full"
+  >
     <div className={`absolute top-0 right-0 w-32 h-32 ${colorClass} opacity-10 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110`}></div>
     <div className="flex items-start justify-between relative z-10">
       <div>
@@ -326,6 +332,8 @@ const AIChat = ({ voiceAction, onVoiceActionConsumed }) => {
           </button>
         </div>
       </div>
+
+      <MedicalDisclaimer />
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">

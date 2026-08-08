@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import API from '../utils/api';
 import { useSettings } from '../contexts/SettingsContext';
 
-const GOOGLE_CLIENT_ID = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxx.apps.googleusercontent.com';
 
 const LoginModal = ({ show, onClose }) => {
   const { settings } = useSettings();
@@ -122,9 +122,8 @@ const LoginModal = ({ show, onClose }) => {
         setRequires2FA(true);
         setMode('2fa');
       } else {
-        API.setToken(response.data?.access_token || response.access_token);
-        API.setRefreshToken(response.data?.refresh_token || response.refresh_token);
-        const profile = await API.saveCurrentAccount();
+        API.setAuthenticated(true);
+        const profile = await API.saveCurrentAccount(response.data?.refresh_token);
         if (profile?.role === 'admin') {
           localStorage.setItem('admin_logged_in', 'true');
           window.location.href = '/admin';
@@ -150,9 +149,8 @@ const LoginModal = ({ show, onClose }) => {
         method: 'POST',
         body: { temp_token: tempToken, code: twoFactorCode },
       });
-      API.setToken(response.data?.access_token || response.access_token);
-      API.setRefreshToken(response.data?.refresh_token || response.refresh_token);
-      await API.saveCurrentAccount();
+      API.setAuthenticated(true);
+      await API.saveCurrentAccount(response.data?.refresh_token);
       window.location.href = '/app';
     } catch (err) {
       setError(err.message || 'Invalid 2FA code.');
@@ -174,9 +172,8 @@ const LoginModal = ({ show, onClose }) => {
         verifyEmailRef.current = email;
         setMode('verify');
       } else {
-        API.setToken(response.data?.access_token || response.access_token);
-        API.setRefreshToken(response.data?.refresh_token || response.refresh_token);
-        await API.saveCurrentAccount();
+        API.setAuthenticated(true);
+        await API.saveCurrentAccount(response.data?.refresh_token);
         window.location.href = '/app';
       }
     } catch (err) {
@@ -197,9 +194,8 @@ const LoginModal = ({ show, onClose }) => {
         method: 'POST',
         body: { email: verifyEmailRef.current, code: verificationCode },
       });
-      API.setToken(response.data?.access_token || response.access_token);
-      API.setRefreshToken(response.data?.refresh_token || response.refresh_token);
-      await API.saveCurrentAccount();
+      API.setAuthenticated(true);
+      await API.saveCurrentAccount(response.data?.refresh_token);
       window.location.href = '/app';
     } catch (err) {
       setError(err.message || 'Invalid verification code.');
@@ -285,19 +281,27 @@ const LoginModal = ({ show, onClose }) => {
         method: 'POST',
         body: { credential: response.credential },
       });
-      API.setToken(res.data?.access_token || res.access_token);
-      API.setRefreshToken(res.data?.refresh_token || res.refresh_token);
-      const profile = await API.saveCurrentAccount();
-      if (profile?.role === 'admin') {
-        localStorage.setItem('admin_logged_in', 'true');
-        window.location.href = '/admin';
+      
+      if (res.data?.requires_2fa || res.requires_2fa) {
+        setTempToken(res.data?.temp_token || res.temp_token);
+        setRequires2FA(true);
+        setMode('2fa');
       } else {
-        window.location.href = '/app';
+        API.setAuthenticated(true);
+        const profile = await API.saveCurrentAccount(res.data?.refresh_token);
+        if (profile?.role === 'admin') {
+          localStorage.setItem('admin_logged_in', 'true');
+          window.location.href = '/admin';
+        } else {
+          window.location.href = '/app';
+        }
       }
     } catch (err) {
       setError(err.message === 'Failed to fetch'
         ? 'Cannot connect to the backend server. Is it running?'
         : err.message || 'Google Authentication failed.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -382,9 +386,8 @@ const LoginModal = ({ show, onClose }) => {
         method: 'POST',
         body: { email: faceEmail, descriptor },
       });
-      API.setToken(res.data?.access_token || res.access_token);
-      API.setRefreshToken(res.data?.refresh_token || res.refresh_token);
-      await API.saveCurrentAccount();
+      API.setAuthenticated(true);
+      await API.saveCurrentAccount(res.data?.refresh_token);
       window.location.href = '/app';
     } catch (err) {
       setError(err.message || 'Face login failed.');
@@ -451,7 +454,7 @@ const LoginModal = ({ show, onClose }) => {
         style={{
           background: '#ffffff',
           borderRadius: '24px',
-          padding: '48px 40px',
+          padding: '24px 32px',
           boxShadow: '0 25px 60px rgba(0,0,0,0.15)',
           animation: 'modalIn 0.3s ease forwards',
         }}
@@ -530,7 +533,7 @@ const LoginModal = ({ show, onClose }) => {
               {loading ? 'Signing in...' : 'Sign In'}
             </button>
             <button type="button" onClick={switchToFace} style={faceBtnStyle}>
-              🧑‍💻 Face Login
+              Face Login
             </button>
 
             {/* OR divider */}

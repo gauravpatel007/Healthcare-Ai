@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../utils/api';
+import { toast } from 'react-hot-toast';
 import {
   Activity, HeartPulse, Flame, Target, Calendar,
   Stethoscope, FileText, Pill, Plus, ArrowRight,
@@ -8,8 +9,13 @@ import {
 } from 'lucide-react';
 
 /* ─── Reusable Card (Matches AdminUI) ──────────── */
-const StatCard = ({ title, value, subtitle, icon: Icon, colorClass }) => (
-  <div className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 relative overflow-hidden group cursor-pointer">
+const StatCard = ({ title, value, subtitle, icon: Icon, colorClass, onClick }) => (
+  <div 
+    onClick={onClick}
+    tabIndex={0}
+    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(e); } }}
+    className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 relative overflow-hidden group cursor-pointer focus:outline-none"
+  >
     <div className={`absolute top-0 right-0 w-32 h-32 ${colorClass} opacity-10 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110`}></div>
     <div className="flex items-start justify-between relative z-10">
       <div>
@@ -29,8 +35,8 @@ const StatCard = ({ title, value, subtitle, icon: Icon, colorClass }) => (
 );
 
 /* ─── Section Header ─────────────────────────────────────────── */
-const SectionHeader = ({ title, subtitle }) => (
-  <div className="flex items-center gap-3 mb-4">
+const SectionHeader = ({ title, subtitle, className = "mb-4" }) => (
+  <div className={`flex items-center gap-3 ${className}`}>
     <div className="w-1.5 h-8 bg-gradient-to-b from-blue-500 to-indigo-400 rounded-full"></div>
     <div>
       <h2 className="text-xl font-extrabold text-gray-900 dark:text-gray-100 tracking-tight">{title}</h2>
@@ -39,7 +45,7 @@ const SectionHeader = ({ title, subtitle }) => (
   </div>
 );
 
-const DashboardOverview = () => {
+const DashboardOverview = ({ currentUser }) => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
 
@@ -85,11 +91,11 @@ const DashboardOverview = () => {
       const hData = await API.get('/trackers/health-data');
       setHealthData(hData || {});
 
-      setShowParamModal(false);
       setNewParam({ category: 'weight', value: '', secondary_value: '' });
+      toast.success('Parameter saved successfully');
     } catch (error) {
       console.error('Failed to save parameter:', error);
-      alert('Failed to save parameter');
+      toast.error('Failed to save parameter');
     } finally {
       setSavingParam(false);
     }
@@ -100,8 +106,9 @@ const DashboardOverview = () => {
     try {
       const res = await API.post('/share/generate');
       setSharedLink(`${window.location.origin}/shared/${res.token}`);
+      toast.success('Sharing link generated');
     } catch (e) {
-      alert('Failed to generate sharing link.');
+      toast.error('Failed to generate sharing link.');
     } finally {
       setIsSharing(false);
     }
@@ -143,126 +150,70 @@ const DashboardOverview = () => {
     let labels = [];
     let datasets = [];
 
-    const getAggregatedData = (records, extractor) => {
-      if (!records || records.length === 0) return { labels: [], data: [] };
-
-      const now = new Date();
-      const currentMonth = now.getMonth();
-      const currentYear = now.getFullYear();
-      const currentDate = now.getDate();
-
-      const fillNulls = (arr) => {
-        let lastValid = arr.find(v => v !== null);
-        if (lastValid === undefined) return arr.map(() => 0);
-        const res = [...arr];
-        for (let i = 0; i < res.length; i++) {
-          if (res[i] !== null) lastValid = res[i];
-          else res[i] = lastValid;
-        }
-        let firstValid = res.find(v => v !== null) || 0;
-        for (let i = 0; i < res.length; i++) {
-          if (res[i] === null) res[i] = firstValid;
-          else break;
-        }
-        return res;
+    const getAggregatedData = (records, extractor, paramType) => {
+      const getEmptyState = () => {
+        const dummyLabels = paramTimeframe === 'thisMonth'
+          ? ['Week 1', 'Week 2', 'Week 3', 'Week 4']
+          : paramTimeframe === '3months' ? ['Month 1', 'Month 2', 'Month 3'] : ['M1', 'M2', 'M3', 'M4', 'M5', 'M6'];
+        const count = paramTimeframe === '3months' ? 3 : paramTimeframe === 'thisMonth' ? 4 : 6;
+        return { labels: dummyLabels.slice(-count), data: Array(count).fill(null) };
       };
 
-      if (paramTimeframe === '6months' || paramTimeframe === '3months') {
-        const numMonths = paramTimeframe === '6months' ? 6 : 3;
-        const aggregated = [];
-        const monthLabels = [];
-        
-        for (let i = numMonths - 1; i >= 0; i--) {
-          const targetDate = new Date(currentYear, currentMonth - i, 1);
-          monthLabels.push(targetDate.toLocaleDateString('en-US', { month: 'short' }));
-          
-          const monthRecords = records.filter(r => {
-            const d = new Date(r.recorded_at || r.date);
-            return d.getMonth() === targetDate.getMonth() && d.getFullYear() === targetDate.getFullYear();
-          });
-          
-          if (monthRecords.length > 0) {
-            const sum = monthRecords.reduce((acc, r) => acc + (extractor(r) || 0), 0);
-            aggregated.push(sum / monthRecords.length);
-          } else {
-            aggregated.push(null);
-          }
-        }
-        return { labels: monthLabels, data: fillNulls(aggregated) };
+      if (!records || records.length === 0) return getEmptyState();
+
+      const now = new Date();
+      let cutoffDate = new Date();
+      
+      if (paramTimeframe === 'thisMonth') {
+        cutoffDate = new Date(now.getFullYear(), now.getMonth(), 1); // Start of this month
+      } else if (paramTimeframe === '3months') {
+        cutoffDate.setMonth(now.getMonth() - 3);
       } else {
-        const weekLabels = [];
-        const aggregated = [];
-        
-        const getCurrentWeekIdx = (dateNum) => Math.min(Math.floor((dateNum - 1) / 7), 3);
-        const currentWeekIdx = getCurrentWeekIdx(currentDate);
-
-        const thisMonthRecords = records.filter(r => {
-          const d = new Date(r.recorded_at || r.date);
-          return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
-        });
-
-        for (let w = 0; w <= currentWeekIdx; w++) {
-          weekLabels.push(`Week ${w + 1}`);
-          const weekRecords = thisMonthRecords.filter(r => {
-            const d = new Date(r.recorded_at || r.date);
-            return getCurrentWeekIdx(d.getDate()) === w;
-          });
-          
-          if (weekRecords.length > 0) {
-            const sum = weekRecords.reduce((acc, r) => acc + (extractor(r) || 0), 0);
-            aggregated.push(sum / weekRecords.length);
-          } else {
-            aggregated.push(null);
-          }
-        }
-        
-        const filledData = fillNulls(aggregated);
-        
-        if (weekLabels.length === 1) {
-          weekLabels.unshift('Start');
-          filledData.unshift(filledData[0]);
-        }
-        
-        return { labels: weekLabels, data: filledData };
+        cutoffDate.setMonth(now.getMonth() - 6);
       }
+
+      const filteredRecords = records.filter(r => new Date(r.recorded_at || r.date) >= cutoffDate);
+      
+      if (filteredRecords.length === 0) return getEmptyState();
+
+      filteredRecords.sort((a, b) => new Date(a.recorded_at || a.date) - new Date(b.recorded_at || b.date));
+      
+      const labels = filteredRecords.map(r => {
+        const d = new Date(r.recorded_at || r.date);
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      });
+      
+      const data = filteredRecords.map(r => extractor(r));
+
+      if (labels.length === 1) {
+        labels.unshift('Start');
+        data.unshift(data[0]);
+      }
+
+      return { labels, data };
     };
 
     if (activeParam === 'weight') {
-      const { labels: l, data: weightData } = getAggregatedData(healthData.weight, r => r.value);
+      const { labels: l, data: weightData } = getAggregatedData(healthData.weight, r => r.value, 'weight');
       labels = l || [];
       const fatData = weightData.map(w => w ? w * 0.25 : null);
       datasets = [
-        {
-          label: 'Weight', data: weightData, borderColor: '#4f46e5', backgroundColor: 'rgba(79, 70, 229, 0.05)',
-          borderWidth: 2, tension: 0.5, pointRadius: 0, pointHoverRadius: 6, fill: true, spanGaps: true
-        },
-        {
-          label: '% Fat', data: fatData, borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.05)',
-          borderWidth: 2, tension: 0.5, pointRadius: 0, pointHoverRadius: 6, fill: true, spanGaps: true
-        }
+        { label: 'Weight', data: weightData },
+        { label: '% Fat', data: fatData }
       ];
     } else if (activeParam === 'bp') {
-      const { labels: l, data: sysData } = getAggregatedData(healthData.blood_pressure, r => r.systolic || r.value);
+      const { labels: l, data: sysData } = getAggregatedData(healthData.blood_pressure, r => r.systolic || r.value, 'sys');
       labels = l || [];
-      const { data: diaData } = getAggregatedData(healthData.blood_pressure, r => r.diastolic || r.secondary_value || 80);
+      const { data: diaData } = getAggregatedData(healthData.blood_pressure, r => r.diastolic || r.secondary_value || 80, 'dia');
       datasets = [
-        {
-          label: 'Systolic', data: sysData, borderColor: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.05)',
-          borderWidth: 2, tension: 0.5, pointRadius: 0, pointHoverRadius: 6, fill: true, spanGaps: true
-        },
-        {
-          label: 'Diastolic', data: diaData, borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.05)',
-          borderWidth: 2, tension: 0.5, pointRadius: 0, pointHoverRadius: 6, fill: true, spanGaps: true
-        }
+        { label: 'Systolic', data: sysData },
+        { label: 'Diastolic', data: diaData }
       ];
     } else if (activeParam === 'pulse') {
-      const { labels: l, data: pulseData } = getAggregatedData(healthData.heart_rate, r => r.value);
+      const { labels: l, data: pulseData } = getAggregatedData(healthData.heart_rate, r => r.value, 'pulse');
       labels = l || [];
       datasets = [
-        {
-          label: 'Heart Rate', data: pulseData, borderColor: '#8b5cf6', backgroundColor: 'rgba(139, 92, 246, 0.05)',
-          borderWidth: 2, tension: 0.5, pointRadius: 0, pointHoverRadius: 6, fill: true, spanGaps: true
-        }
+        { label: 'Heart Rate', data: pulseData }
       ];
     }
 
@@ -272,36 +223,85 @@ const DashboardOverview = () => {
         window.myChartInstance.destroy();
       }
       if (ctx) {
+        const canvasCtx = ctx.getContext('2d');
+
+        const createGradient = (colorRGB) => {
+          const gradient = canvasCtx.createLinearGradient(0, 0, 0, 300);
+          gradient.addColorStop(0, `rgba(${colorRGB}, 0.5)`);
+          gradient.addColorStop(1, `rgba(${colorRGB}, 0.0)`);
+          return gradient;
+        };
+
+        datasets.forEach((ds, i) => {
+          let rgb, hex;
+
+          if (activeParam === 'pulse') {
+            rgb = '239, 68, 68'; // Red
+            hex = '#ef4444';
+          } else if (activeParam === 'bp') {
+            if (i === 0) {
+              rgb = '249, 115, 22'; // Orange for Systolic
+              hex = '#f97316';
+            } else {
+              rgb = '139, 92, 246'; // Violet for Diastolic
+              hex = '#8b5cf6';
+            }
+          } else {
+            // Weight
+            const isPrimary = i === 0;
+            rgb = isPrimary ? '6, 182, 212' : '59, 130, 246'; // Cyan vs Blue
+            hex = isPrimary ? '#06b6d4' : '#3b82f6';
+          }
+
+          ds.borderColor = hex;
+          ds.backgroundColor = createGradient(rgb);
+          ds.borderWidth = 4;
+          ds.tension = 0.45; // Smooth curves!
+          ds.pointBackgroundColor = '#fff';
+          ds.pointBorderColor = hex;
+          ds.pointBorderWidth = 3;
+          ds.pointRadius = 4;
+          ds.pointHoverRadius = 7;
+          ds.fill = true;
+        });
+
         window.myChartInstance = new window.Chart(ctx, {
           type: 'line',
           data: { labels, datasets },
           options: {
             responsive: true, maintainAspectRatio: false,
-            interaction: {
-              mode: 'index',
-              intersect: false,
-            },
+            interaction: { mode: 'index', intersect: false },
             plugins: {
               legend: {
-                position: 'bottom',
-                labels: { usePointStyle: true, pointStyle: 'circle', padding: 20, font: { family: "'Inter', sans-serif", weight: '600' } }
+                position: 'top', align: 'end',
+                labels: {
+                  usePointStyle: true, pointStyle: 'circle', padding: 20,
+                  font: { family: "'Inter', sans-serif", weight: '600', size: 12 }, color: '#64748b'
+                }
               },
               tooltip: {
-                backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                titleFont: { family: "'Inter', sans-serif" },
-                bodyFont: { family: "'Inter', sans-serif" },
-                padding: 12,
-                cornerRadius: 8,
+                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                titleFont: { family: "'Inter', sans-serif", size: 13, weight: '700' },
+                bodyFont: { family: "'Inter', sans-serif", size: 13 },
+                padding: 12, cornerRadius: 12, displayColors: true, boxPadding: 6,
+                borderColor: 'rgba(255,255,255,0.1)', borderWidth: 1
               }
             },
             scales: {
-              x: { grid: { display: false } },
-              y: { grid: { color: 'rgba(0,0,0,0.05)', borderDash: [5, 5] }, beginAtZero: false }
+              x: {
+                grid: { display: false, drawBorder: false },
+                ticks: { font: { family: "'Inter', sans-serif", weight: '500' }, color: '#94a3b8' }
+              },
+              y: {
+                grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false, borderDash: [5, 5] },
+                ticks: { font: { family: "'Inter', sans-serif", weight: '500' }, color: '#94a3b8', padding: 10 },
+                beginAtZero: false
+              }
             }
           }
         });
       }
-    }, 100);
+    }, 50);
   }, [loading, healthData, activeParam, paramTimeframe]);
 
   const getGreetingTime = () => {
@@ -332,9 +332,10 @@ const DashboardOverview = () => {
         }
         return [...prev, updatedLog];
       });
+      toast.success(newStatus === 'taken' ? 'Medicine logged as taken' : 'Medicine log removed');
     } catch (e) {
       console.error('Failed to log medicine', e);
-      alert('Failed to log medicine');
+      toast.error('Failed to log medicine');
     }
   };
 
@@ -347,13 +348,14 @@ const DashboardOverview = () => {
   }
 
   const userName = (() => {
+    if (currentUser?.name && currentUser.name !== 'Loading...' && currentUser.name.toLowerCase() !== 'user') return currentUser.name;
     const apiName = dashboardSummary?.user_name;
     if (apiName && apiName.toLowerCase() !== 'user') return apiName;
     try {
       const accounts = JSON.parse(localStorage.getItem('lifeos_accounts') || '[]');
-      const currentToken = localStorage.getItem('lifeos_token');
-      const acc = accounts.find(a => a.token === currentToken);
-      if (acc && acc.name && acc.name.toLowerCase() !== 'user') return acc.name;
+      if (accounts.length > 0 && accounts[0].name) {
+        return accounts[0].name;
+      }
     } catch (e) { }
     return 'User';
   })();
@@ -390,15 +392,15 @@ const DashboardOverview = () => {
             <div className="bg-gray-50 dark:bg-gray-700/50 px-3 py-2 rounded-2xl border border-gray-100 dark:border-gray-600 flex items-center gap-2.5">
               <Flame className="w-4 h-4 text-orange-500" />
               <div>
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-tight">Daily Goal</p>
-                <p className="text-xs font-extrabold text-gray-800 dark:text-white leading-tight">45 mins</p>
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-tight">Calories Burned</p>
+                <p className="text-xs font-extrabold text-gray-800 dark:text-white leading-tight">{fitnessStats?.calories_burned || 0} kcal</p>
               </div>
             </div>
             <div className="bg-gray-50 dark:bg-gray-700/50 px-3 py-2 rounded-2xl border border-gray-100 dark:border-gray-600 flex items-center gap-2.5">
-              <Droplet className="w-4 h-4 text-blue-500" />
+              <Activity className="w-4 h-4 text-emerald-500" />
               <div>
-                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-tight">Hydration</p>
-                <p className="text-xs font-extrabold text-gray-800 dark:text-white leading-tight">1.5L</p>
+                <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest leading-tight">Steps Goal</p>
+                <p className="text-xs font-extrabold text-gray-800 dark:text-white leading-tight">{fitnessStats?.step_goal ? Math.min((fitnessStats.steps / fitnessStats.step_goal * 100), 100).toFixed(0) : 0}%</p>
               </div>
             </div>
           </div>
@@ -468,8 +470,8 @@ const DashboardOverview = () => {
 
           {/* Health Parameters Chart */}
           <div className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 lg:p-8 shadow-sm border border-gray-100 dark:border-gray-700">
-            <div className="flex flex-wrap justify-between items-center mb-8 gap-4 w-full">
-              <SectionHeader title="My Parameters" subtitle="Track key health metrics over time" />
+            <div className="flex flex-wrap justify-between items-center mb-6 gap-4 w-full">
+              <SectionHeader title="My Parameters" subtitle="Track key health metrics over time" className="mb-0" />
               <button
                 onClick={() => setShowParamModal(true)}
                 className="flex items-center justify-center gap-2 px-5 py-2.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors shrink-0"
@@ -566,15 +568,15 @@ const DashboardOverview = () => {
                     <p className="text-sm text-pink-900 dark:text-pink-100 font-bold mb-1.5 truncate">Summary Link Ready!</p>
                     <div className="flex items-center gap-2 w-full bg-white dark:bg-gray-900 p-1 rounded-lg border border-pink-200 dark:border-pink-700 focus-within:border-pink-400 transition-colors shadow-inner">
                       <input type="text" readOnly value={sharedLink} className="flex-1 bg-transparent text-gray-700 dark:text-gray-300 px-2 py-0.5 text-xs font-medium outline-none truncate min-w-0" onClick={e => e.target.select()} />
-                      <button onClick={(e) => { 
-                          e.stopPropagation(); 
-                          navigator.clipboard.writeText(sharedLink); 
-                          setIsCopied(true);
-                          setTimeout(() => {
-                            setIsCopied(false);
-                            setSharedLink('');
-                          }, 5000);
-                        }} 
+                      <button onClick={(e) => {
+                        e.stopPropagation();
+                        navigator.clipboard.writeText(sharedLink);
+                        setIsCopied(true);
+                        setTimeout(() => {
+                          setIsCopied(false);
+                          setSharedLink('');
+                        }, 5000);
+                      }}
                         className={`${isCopied ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-pink-500 hover:bg-pink-600'} text-white px-3 py-1 rounded font-bold text-xs transition-colors shadow-md shrink-0`}
                       >
                         {isCopied ? 'Copied' : 'Copy'}
@@ -679,49 +681,71 @@ const DashboardOverview = () => {
               </button>
             </div>
 
-            <div className="space-y-5">
-              <div>
-                <div className="flex justify-between text-sm font-bold mb-2">
-                  <span className="flex items-center gap-2 text-rose-500"><Flame className="w-4 h-4" /> Protein</span>
-                  <span className="text-gray-900 dark:text-gray-100">{nutritionPlan?.protein_goal_grams || 84}g</span>
-                </div>
-                <div className="h-2.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-rose-400 to-rose-500 rounded-full" style={{ width: '100%' }}></div>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm font-bold mb-2">
-                  <span className="flex items-center gap-2 text-amber-500"><Activity className="w-4 h-4" /> Carbs</span>
-                  <span className="text-gray-900 dark:text-gray-100">{nutritionPlan?.carbs_goal_grams || 200}g</span>
-                </div>
-                <div className="h-2.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full" style={{ width: '100%' }}></div>
-                </div>
-              </div>
-              <div>
-                <div className="flex justify-between text-sm font-bold mb-2">
-                  <span className="flex items-center gap-2 text-indigo-500"><Droplet className="w-4 h-4" /> Fats</span>
-                  <span className="text-gray-900 dark:text-gray-100">{nutritionPlan?.fat_goal_grams || 60}g</span>
-                </div>
-                <div className="h-2.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-indigo-400 to-indigo-500 rounded-full" style={{ width: '100%' }}></div>
-                </div>
-              </div>
-            </div>
-            <div className="mt-6 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 flex justify-between items-center border border-emerald-100 dark:border-emerald-800/50">
-              <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2"><Target className="w-4 h-4" /> Calories</span>
-              <span className="font-extrabold text-gray-900 dark:text-gray-100">{nutritionPlan?.tdee || 2200} <span className="text-xs text-gray-500 font-medium">kcal/day</span></span>
-            </div>
+            {(() => {
+              let consumedProtein = 0, consumedCarbs = 0, consumedFats = 0, consumedCalories = 0;
+              if (nutritionPlan && nutritionPlan.meals) {
+                nutritionPlan.meals.forEach(m => {
+                  if (m.meal_type && m.meal_type.toLowerCase() === 'scanned snack' && !m.is_deleted) {
+                    consumedProtein += (m.protein || 0);
+                    consumedCarbs += (m.carbs || 0);
+                    consumedFats += (m.fat || m.fats || 0);
+                    consumedCalories += (m.calories || 0);
+                  }
+                });
+              }
+              const goalProtein = nutritionPlan?.protein_goal_grams || 84;
+              const goalCarbs = nutritionPlan?.carbs_goal_grams || 200;
+              const goalFats = nutritionPlan?.fat_goal_grams || 60;
+              const goalCalories = nutritionPlan?.tdee || 2200;
+              
+              return (
+                <>
+                  <div className="space-y-5">
+                    <div>
+                      <div className="flex justify-between text-sm font-bold mb-2">
+                        <span className="flex items-center gap-2 text-rose-500"><Flame className="w-4 h-4" /> Protein</span>
+                        <span className="text-gray-900 dark:text-gray-100">{consumedProtein} / {goalProtein}g</span>
+                      </div>
+                      <div className="h-2.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-rose-400 to-rose-500 rounded-full transition-all duration-1000" style={{ width: `${Math.min((consumedProtein / goalProtein) * 100, 100)}%` }}></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm font-bold mb-2">
+                        <span className="flex items-center gap-2 text-amber-500"><Activity className="w-4 h-4" /> Carbs</span>
+                        <span className="text-gray-900 dark:text-gray-100">{consumedCarbs} / {goalCarbs}g</span>
+                      </div>
+                      <div className="h-2.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all duration-1000" style={{ width: `${Math.min((consumedCarbs / goalCarbs) * 100, 100)}%` }}></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="flex justify-between text-sm font-bold mb-2">
+                        <span className="flex items-center gap-2 text-indigo-500"><Droplet className="w-4 h-4" /> Fats</span>
+                        <span className="text-gray-900 dark:text-gray-100">{consumedFats} / {goalFats}g</span>
+                      </div>
+                      <div className="h-2.5 w-full bg-gray-100 dark:bg-gray-700 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-indigo-400 to-indigo-500 rounded-full transition-all duration-1000" style={{ width: `${Math.min((consumedFats / goalFats) * 100, 100)}%` }}></div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-6 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-4 flex justify-between items-center border border-emerald-100 dark:border-emerald-800/50">
+                    <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-2"><Target className="w-4 h-4" /> Calories</span>
+                    <span className="font-extrabold text-gray-900 dark:text-gray-100">{consumedCalories} / {goalCalories} <span className="text-xs text-gray-500 font-medium">kcal/day</span></span>
+                  </div>
+                </>
+              );
+            })()}
           </div>
 
           {/* My Appointments */}
           <div className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700">
-            <div className="flex justify-between items-center mb-6">
-              <SectionHeader title="Appointments" />
-              <div className="flex bg-gray-50 dark:bg-gray-900/50 p-1 rounded-xl border border-gray-100 dark:border-gray-700">
+            <div className="flex flex-wrap justify-between items-center mb-6 gap-3">
+              <SectionHeader title="Appointments" className="mb-0" />
+              <div className="flex shrink-0 bg-gray-50 dark:bg-gray-900/50 p-1 rounded-xl border border-gray-100 dark:border-gray-700">
                 <button
                   onClick={() => setAptTimeframe('today')}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${aptTimeframe === 'today'
+                  className={`px-3 py-1 text-xs font-bold whitespace-nowrap rounded-lg transition-all ${aptTimeframe === 'today'
                     ? 'bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                     }`}
@@ -730,7 +754,7 @@ const DashboardOverview = () => {
                 </button>
                 <button
                   onClick={() => setAptTimeframe('week')}
-                  className={`px-3 py-1 text-xs font-bold rounded-lg transition-all ${aptTimeframe === 'week'
+                  className={`px-3 py-1 text-xs font-bold whitespace-nowrap rounded-lg transition-all ${aptTimeframe === 'week'
                     ? 'bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                     }`}

@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Activity, Loader2, X, Clock, Mail, PhoneCall, Bot } from 'lucide-react';
+import { Calendar, Activity, Loader2, X, Clock, Mail, PhoneCall, Bot, AlertTriangle, Heart } from 'lucide-react';
 import API from '../../utils/api';
 
 const AdminHealth = () => {
   const [data, setData] = useState({ appointments: [], emergencies: [], triageLogs: [] });
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('emergency');
 
   // Modals state
   const [showViewAll, setShowViewAll] = useState(false);
@@ -84,16 +85,73 @@ const AdminHealth = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 relative">
       
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Healthcare Services</h1>
-          <p className="text-gray-500 dark:text-gray-400">Manage appointments and emergency alerts.</p>
+      <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 lg:p-8 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-row flex-wrap md:flex-nowrap items-center justify-between gap-4 relative overflow-hidden w-full">
+        <div className="flex items-center gap-4 lg:gap-6 relative z-10 w-auto">
+          <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
+            <Activity className="w-8 h-8" />
+          </div>
+          <div className="text-left">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-1 text-left">
+              Healthcare Services
+            </h1>
+            <p className="text-xs sm:text-sm lg:text-base text-gray-500 dark:text-gray-400 font-medium flex items-center gap-2 text-left">
+              Manage appointments and emergency alerts.
+            </p>
+          </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="flex flex-wrap gap-3 mb-6 bg-white dark:bg-gray-800 p-2 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
+        <button
+          onClick={() => setActiveTab('emergency')}
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all ${
+            activeTab === 'emergency'
+              ? 'bg-red-50 dark:!bg-gray-700 text-red-700 dark:!text-red-400 shadow-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200'
+          }`}
+        >
+          <AlertTriangle className={`w-4 h-4 ${activeTab === 'emergency' ? 'text-red-600 dark:!text-red-400' : ''}`} />
+          Active Emergencies
+        </button>
+        <button
+          onClick={() => setActiveTab('appointment')}
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all ${
+            activeTab === 'appointment'
+              ? 'bg-blue-50 dark:!bg-gray-700 text-blue-700 dark:!text-blue-400 shadow-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200'
+          }`}
+        >
+          <Calendar className={`w-4 h-4 ${activeTab === 'appointment' ? 'text-blue-600 dark:!text-blue-400' : ''}`} />
+          Appointments
+        </button>
+        <button
+          onClick={() => setActiveTab('organ')}
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all ${
+            activeTab === 'organ'
+              ? 'bg-teal-50 dark:!bg-gray-700 text-teal-700 dark:!text-teal-400 shadow-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200'
+          }`}
+        >
+          <Heart className={`w-4 h-4 ${activeTab === 'organ' ? 'text-teal-600 dark:!text-teal-400' : ''}`} />
+          Organ Donors
+        </button>
+        <button
+          onClick={() => setActiveTab('ai_triage')}
+          className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm transition-all ${
+            activeTab === 'ai_triage'
+              ? 'bg-purple-50 dark:!bg-gray-700 text-purple-700 dark:!text-purple-400 shadow-sm'
+              : 'text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700/50 hover:text-gray-900 dark:hover:text-gray-200'
+          }`}
+        >
+          <Bot className={`w-4 h-4 ${activeTab === 'ai_triage' ? 'text-purple-600 dark:!text-purple-400' : ''}`} />
+          AI Triage Logs
+        </button>
+      </div>
+
+      <div>
         
         {/* Appointments Module */}
+        {activeTab === 'appointment' && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm p-6">
           <div className="flex justify-between items-center mb-6">
              <h3 className="text-lg font-bold flex items-center">
@@ -130,8 +188,10 @@ const AdminHealth = () => {
             )}
           </div>
         </div>
+        )}
 
         {/* Emergency Alerts Module */}
+        {activeTab === 'emergency' && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-red-100 dark:border-red-900/30 shadow-sm p-6 relative overflow-hidden">
           <div className="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-bl-full -z-10"></div>
           <div className="flex justify-between items-center mb-6">
@@ -177,12 +237,10 @@ const AdminHealth = () => {
             )}
           </div>
         </div>
-        
-      </div>
-
+        )}
       {/* Bottom Grid: AI Triage & Organ Donors */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         {/* AI Triage Logs Module */}
+        {activeTab === 'ai_triage' && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-purple-100 dark:border-purple-900/30 shadow-sm p-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-bl-full -z-10"></div>
         <div className="flex justify-between items-center mb-6">
@@ -229,8 +287,10 @@ const AdminHealth = () => {
           )}
         </div>
         </div>
+        )}
 
         {/* Registered Organ Donors Module */}
+        {activeTab === 'organ' && (
         <div className="bg-white dark:bg-gray-800 rounded-2xl border border-teal-100 dark:border-teal-900/30 shadow-sm p-6 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/10 rounded-bl-full -z-10"></div>
         <div className="flex justify-between items-center mb-6">
@@ -284,6 +344,7 @@ const AdminHealth = () => {
           )}
         </div>
         </div>
+        )}
       </div>
 
       {/* Reschedule Modal */}

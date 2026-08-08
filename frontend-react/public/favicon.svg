@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Left half heart -->
+  <path d="M256 464c-11.8 0-23-6.2-29.4-16.7L67.3 183.8C35.9 132.2 46.4 63.6 92 23.9 130.4-9.3 188.1-5.1 223 33.2L256 69.4V464z" fill="#FF4B63"/>
+  <!-- Right half heart -->
+  <path d="M256 464V69.4l33-36.2C323.9-5.1 381.6-9.3 420 23.9c45.6 39.7 56.1 108.3 24.7 159.9L285.4 447.3c-6.4 10.5-17.6 16.7-29.4 16.7z" fill="#C20E4D"/>
+  <!-- Pulse line -->
+  <path d="M 40 256 H 140 L 180 160 L 256 360 L 310 160 L 350 256 H 472" fill="none" stroke="#BCE0FD" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

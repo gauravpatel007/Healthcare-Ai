@@ -11,6 +11,31 @@ from app.models.user import User
 
 router = APIRouter(prefix="/admin/audit", tags=["Admin Audit Logs"])
 
+from pydantic import BaseModel
+from app.utils.security import create_audit_log
+
+class AuditLogCreate(BaseModel):
+    action: str
+    target_entity_type: str = "System"
+    target_entity_id: Optional[str] = None
+    details: Optional[str] = None
+
+@router.post("/logs")
+async def create_custom_audit_log(
+    log_data: AuditLogCreate,
+    current_admin_id: str = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db)
+):
+    await create_audit_log(
+        db=db,
+        admin_id=current_admin_id,
+        action=log_data.action,
+        target_type=log_data.target_entity_type,
+        target_id=log_data.target_entity_id,
+        details={"info": log_data.details} if log_data.details else None
+    )
+    return {"success": True}
+
 @router.get("/logs")
 async def get_audit_logs(
     skip: int = Query(0, ge=0),

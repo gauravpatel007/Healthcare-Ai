@@ -1,14 +1,19 @@
 import { useState, useEffect } from 'react';
 import { 
-  Users, Activity, Bot, Calendar, RefreshCcw,
+  Users, Activity, Bot, Calendar, RefreshCcw, LayoutDashboard,
   Stethoscope, FileText, Droplets, SmilePlus, Dumbbell, Clock, Zap,
-  XCircle, Coins, TrendingUp, UserPlus, Wifi, BarChart3, Pill, ShieldAlert
+  XCircle, Coins, TrendingUp, UserPlus, Wifi, BarChart3, Pill, ShieldAlert, Download, Loader2
 } from 'lucide-react';
 import API from '../../utils/api';
 
 /* ─── Reusable Card (EXACT same design as original) ──────────── */
-const StatCard = ({ title, value, subtitle, icon: Icon, colorClass }) => (
-  <div className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 relative overflow-hidden group">
+const StatCard = ({ title, value, subtitle, icon: Icon, colorClass, onClick }) => (
+  <div 
+    onClick={onClick}
+    tabIndex={0}
+    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(e); } }}
+    className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 relative overflow-hidden group cursor-pointer focus:outline-none"
+  >
     <div className={`absolute top-0 right-0 w-32 h-32 ${colorClass} opacity-10 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110`}></div>
     <div className="flex items-start justify-between relative z-10">
       <div>
@@ -54,6 +59,52 @@ const AdminOverview = () => {
   const [activeChart, setActiveChart] = useState('ai_usage');
   const [chartRange, setChartRange] = useState('7');
   const [chart2Range, setChart2Range] = useState('7');
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownloadReport = async () => {
+    setIsDownloading(true);
+    try {
+      // Fetch detailed analytics for the report
+      const analyticsData = await API.get('/admin/analytics/detailed');
+
+      let csv = `Report generated on ${new Date().toLocaleString()}\n\n=== DASHBOARD OVERVIEW ===\n`;
+      csv += `Total Users,${stats?.total_users || 0}\n`;
+      csv += `Active Users,${stats?.active_users || 0}\n`;
+      csv += `AI Conversations,${stats?.ai_conversations || 0}\n`;
+      csv += `Appointments,${stats?.total_appointments || 0}\n`;
+      csv += `Emergency Events,${stats?.emergency_events || 0}\n\n`;
+
+      csv += `=== DETAILED ANALYTICS ===\n`;
+      csv += `Daily Active Users (DAU),${analyticsData?.demographics?.dau || 0}\n`;
+      csv += `Monthly Active Users (MAU),${analyticsData?.demographics?.mau || 0}\n`;
+      csv += `User Retention Rate,${analyticsData?.demographics?.retention_rate || 0}%\n`;
+      csv += `AI Daily Queries,${analyticsData?.ai_performance?.daily_queries || 0}\n`;
+      csv += `AI Weekly Queries,${analyticsData?.ai_performance?.weekly_queries || 0}\n`;
+      csv += `AI Avg Response Time,${analyticsData?.ai_performance?.avg_response_time || 0}ms\n`;
+      csv += `API Error Rate,${analyticsData?.system?.error_rate || 0}%\n`;
+      csv += `System Uptime,${analyticsData?.system?.uptime || 0}%\n`;
+      csv += `Active Nodes,${analyticsData?.system?.active_nodes || 0}\n`;
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `lifeos_report_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      await API.post('/admin/audit/logs', {
+        action: 'Downloaded Dashboard Report',
+        target_entity_type: 'Dashboard',
+        details: 'Admin exported the dashboard statistics to CSV'
+      });
+    } catch(err) {
+      console.error(err);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const fetchStats = async () => {
     setLoading(true);
@@ -101,27 +152,41 @@ const AdminOverview = () => {
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-10">
       
       {/* ── Header ─────────────────────────────────── */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white dark:bg-gray-800 p-6 rounded-[2rem] shadow-sm border border-gray-100 dark:border-gray-700">
-        <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Dashboard Overview</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium mt-1">Real-time pulse of the LifeOS Healthcare network.</p>
+      <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 lg:p-8 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-row flex-wrap md:flex-nowrap items-center justify-between gap-4 relative overflow-hidden w-full">
+        <div className="flex items-center gap-4 lg:gap-6 relative z-10 w-auto">
+          <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
+            <LayoutDashboard className="w-8 h-8" />
+          </div>
+          <div className="text-left">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-1 text-left">
+              Dashboard Overview
+            </h1>
+            <p className="text-xs sm:text-sm lg:text-base text-gray-500 dark:text-gray-400 font-medium flex items-center gap-2 text-left">
+              Real-time pulse of the LifeOS Healthcare network.
+            </p>
+          </div>
         </div>
-        <div className="flex gap-3">
+        <div className="flex items-center justify-end gap-3 relative z-10 shrink-0 ml-auto pr-2 flex-wrap">
           <button onClick={fetchStats} className="p-3 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors shadow-sm">
             <RefreshCcw className="w-5 h-5" />
           </button>
-          <button className="px-6 py-3 bg-gray-900 dark:bg-indigo-600 hover:bg-black dark:hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-lg transition-all hover:shadow-xl hover:-translate-y-0.5">
-            Download Report
+          <button 
+            onClick={handleDownloadReport}
+            disabled={isDownloading}
+            className="px-6 py-3 bg-gray-900 dark:bg-indigo-600 hover:bg-black dark:hover:bg-indigo-700 text-white rounded-xl text-sm font-bold shadow-lg transition-all hover:shadow-xl hover:-translate-y-0.5 disabled:opacity-50 flex items-center gap-2"
+          >
+            {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            {isDownloading ? 'Downloading...' : 'Download Report'}
           </button>
         </div>
       </div>
 
       {/* ── Main Stats ────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <StatCard title="Total Users" value={(stats.total_users || 0).toLocaleString()} subtitle="Registered Accounts" icon={Users} colorClass="bg-blue-500" />
+        <StatCard title="Total Users" value={(stats.total_users || 0).toLocaleString()} subtitle="Registered Accounts" icon={Users} colorClass="bg-cyan-500" />
         <StatCard title="Active Users" value={(stats.active_users || 0).toLocaleString()} subtitle="Logged in recently" icon={Activity} colorClass="bg-emerald-500" />
         <StatCard title="AI Convos" value={(stats.ai_conversations || 0).toLocaleString()} subtitle="Messages processed" icon={Bot} colorClass="bg-purple-500" />
-        <StatCard title="Appointments" value={(stats.total_appointments || 0).toLocaleString()} subtitle="Total scheduled" icon={Calendar} colorClass="bg-cyan-500" />
+        <StatCard title="Appointments" value={(stats.total_appointments || 0).toLocaleString()} subtitle="Total scheduled" icon={Calendar} colorClass="bg-orange-500" />
         <StatCard title="Emergency Events" value={(stats.emergency_events || 0).toLocaleString()} subtitle="SOS alerts triggered" icon={ShieldAlert} colorClass="bg-rose-500" />
       </div>
 
@@ -188,9 +253,9 @@ const AdminOverview = () => {
       <SectionHeader title="Users Breakdown" subtitle="Detailed user activity metrics" />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <StatCard title="Active Today" value={(u.active_today || 0).toLocaleString()} subtitle="Logged in today" icon={Activity} colorClass="bg-emerald-500" />
-        <StatCard title="Weekly Active" value={(u.weekly_active || 0).toLocaleString()} subtitle="Last 7 days" icon={TrendingUp} colorClass="bg-blue-500" />
-        <StatCard title="Monthly Active" value={(u.monthly_active || 0).toLocaleString()} subtitle="Last 30 days" icon={Users} colorClass="bg-indigo-500" />
-        <StatCard title="New Registrations" value={(u.new_registrations || 0).toLocaleString()} subtitle="This week" icon={UserPlus} colorClass="bg-teal-500" />
+        <StatCard title="Weekly Active" value={(u.weekly_active || 0).toLocaleString()} subtitle="Last 7 days" icon={TrendingUp} colorClass="bg-cyan-500" />
+        <StatCard title="Monthly Active" value={(u.monthly_active || 0).toLocaleString()} subtitle="Last 30 days" icon={Users} colorClass="bg-purple-500" />
+        <StatCard title="New Registrations" value={(u.new_registrations || 0).toLocaleString()} subtitle="This week" icon={UserPlus} colorClass="bg-orange-500" />
         <StatCard title="Online Now" value={(u.online || 0).toLocaleString()} subtitle="Approximate" icon={Wifi} colorClass="bg-green-500" />
       </div>
 
@@ -198,20 +263,20 @@ const AdminOverview = () => {
       <SectionHeader title="Health Statistics" subtitle="Platform health feature usage" />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Symptom Scans" value={(h.symptom_scans || 0).toLocaleString()} subtitle="AI diagnoses run" icon={Stethoscope} colorClass="bg-rose-500" />
-        <StatCard title="Medical Reports" value={(h.medical_reports || 0).toLocaleString()} subtitle="Records uploaded" icon={FileText} colorClass="bg-blue-500" />
+        <StatCard title="Medical Reports" value={(h.medical_reports || 0).toLocaleString()} subtitle="Records uploaded" icon={FileText} colorClass="bg-cyan-500" />
         <StatCard title="Mood Entries" value={(h.mood_entries || 0).toLocaleString()} subtitle="Emotional check-ins" icon={SmilePlus} colorClass="bg-amber-500" />
-        <StatCard title="Workout Sessions" value={(h.workout_sessions || 0).toLocaleString()} subtitle="Fitness tracked" icon={Dumbbell} colorClass="bg-orange-500" />
         <StatCard title="Medication Logs" value={(h.medication_logs || 0).toLocaleString()} subtitle="Meds tracked" icon={Pill} colorClass="bg-purple-500" />
-        <StatCard title="AI Conversations" value={(h.ai_conversations || 0).toLocaleString()} subtitle="Total messages" icon={Bot} colorClass="bg-indigo-500" />
+        <StatCard title="Workout Sessions" value={(h.workout_sessions || 0).toLocaleString()} subtitle="Fitness tracked" icon={Dumbbell} colorClass="bg-orange-500" />
+        <StatCard title="AI Conversations" value={(h.ai_conversations || 0).toLocaleString()} subtitle="Total messages" icon={Bot} colorClass="bg-green-500" />
       </div>
 
       {/* ── AI Analytics ────────────────────────────────────────── */}
       <SectionHeader title="AI Analytics" subtitle="Performance and usage insights" />
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard title="Requests Today" value={(ai.requests_today || 0).toLocaleString()} subtitle="API calls today" icon={Zap} colorClass="bg-yellow-500" />
-        <StatCard title="Avg Response" value={`${ai.avg_response_time_ms || 0}ms`} subtitle="Processing time" icon={Clock} colorClass="bg-blue-500" />
+        <StatCard title="Avg Response" value={`${ai.avg_response_time_ms || 0}ms`} subtitle="Processing time" icon={Clock} colorClass="bg-cyan-500" />
         <StatCard title="Failed Requests" value={(ai.failed_requests || 0).toLocaleString()} subtitle="Errors caught" icon={XCircle} colorClass="bg-rose-500" />
-        <StatCard title="Token Usage" value={(ai.total_tokens || 0).toLocaleString()} subtitle="Tokens consumed" icon={Coins} colorClass="bg-amber-500" />
+        <StatCard title="Token Usage" value={(ai.total_tokens || 0).toLocaleString()} subtitle="Tokens consumed" icon={Coins} colorClass="bg-purple-500" />
       </div>
 
       {/* Top Features & Diseases */}

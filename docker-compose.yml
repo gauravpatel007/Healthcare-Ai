@@ -6,7 +6,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: lifeos
-      POSTGRES_PASSWORD: lifeos_secret
+      POSTGRES_PASSWORD: YOUR_SECURE_PASSWORD
       POSTGRES_DB: lifeos_db
     ports:
       - "5432:5432"

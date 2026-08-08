@@ -29,17 +29,18 @@ const AdminSettings = () => {
   const [uploadingLogo, setUploadingLogo] = useState(false);
   const [viewingLogo, setViewingLogo] = useState(false);
   const fileInputRef = useRef(null);
-  const { refreshSettings, userTheme, setUserTheme } = useSettings();
+  const { refreshSettings } = useSettings();
 
   useEffect(() => {
     fetchSettings();
   }, []);
 
   useEffect(() => {
-    if (userTheme) {
-      setSettings(prev => ({ ...prev, theme: userTheme }));
+    const savedLandingTheme = localStorage.getItem('landing_theme');
+    if (savedLandingTheme) {
+      setSettings(prev => ({ ...prev, theme: savedLandingTheme }));
     }
-  }, [userTheme]);
+  }, []);
 
   const fetchSettings = async () => {
     try {
@@ -81,7 +82,9 @@ const AdminSettings = () => {
   const handleThemeChange = (e) => {
     const newTheme = e.target.value;
     setSettings(prev => ({ ...prev, theme: newTheme }));
-    if (setUserTheme) setUserTheme(newTheme);
+    // Write to landing_theme localStorage and fire event for LandingPage
+    localStorage.setItem('landing_theme', newTheme);
+    window.dispatchEvent(new Event('landing-theme-change'));
   };
 
   const handleColorSelect = (color) => {
@@ -104,11 +107,10 @@ const AdminSettings = () => {
       const res = await api.uploadAdminFile(formData);
       if (res.file_path) {
         let url = res.file_path;
-        if (url.startsWith('/uploads')) {
-          url = `http://127.0.0.1:8000${url}`;
-        } else {
-          url = `http://127.0.0.1:8000/uploads/${url.replace(/^\//, '')}`;
+        if (!url.startsWith('/uploads') && !url.startsWith('http')) {
+          url = `/uploads/${url.replace(/^\//, '')}`;
         }
+        setSettings(prev => ({ ...prev, site_logo: api.getMediaUrl(url) }));
         setSettings(prev => ({ ...prev, site_logo: url }));
       }
     } catch (err) {
@@ -131,19 +133,30 @@ const AdminSettings = () => {
   return (
     <div className="space-y-6 animate-in fade-in duration-500 pb-12">
       
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">System Settings</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium mt-1">Manage global application settings and preferences.</p>
+      <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 lg:p-8 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-row flex-wrap md:flex-nowrap items-center justify-between gap-4 relative overflow-hidden w-full">
+        <div className="flex items-center gap-4 lg:gap-6 relative z-10 w-auto">
+          <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
+            <SettingsIcon className="w-8 h-8" />
+          </div>
+          <div className="text-left">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-1 text-left">
+              System Settings
+            </h1>
+            <p className="text-xs sm:text-sm lg:text-base text-gray-500 dark:text-gray-400 font-medium flex items-center gap-2 text-left">
+              Manage global application settings and preferences.
+            </p>
+          </div>
         </div>
-        <button 
-          onClick={handleSave}
-          disabled={saving}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-5 py-2.5 rounded-xl font-bold transition-colors shadow-sm"
-        >
-          {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />} 
-          {saving ? 'Saving...' : 'Save Changes'}
-        </button>
+        <div className="flex items-center justify-end gap-3 relative z-10 shrink-0 ml-auto pr-2 flex-wrap">
+          <button 
+            onClick={handleSave}
+            disabled={saving}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-5 py-2.5 rounded-xl font-bold transition-colors shadow-sm"
+          >
+            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <Save className="w-5 h-5" />} 
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
@@ -275,7 +288,7 @@ const AdminSettings = () => {
             </h3>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">Theme Default</label>
+                <label className="block text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5">Landing Page Theme</label>
                 <div className="flex gap-4">
                   <label className={`flex-1 flex items-center justify-center p-3 rounded-xl cursor-pointer font-medium text-sm transition-colors ${settings.theme === 'light' ? 'border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400' : 'border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'}`}>
                     <input type="radio" name="theme" value="light" checked={settings.theme === 'light'} onChange={handleThemeChange} className="sr-only" />

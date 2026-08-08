@@ -47,6 +47,7 @@ export default function AdminMedicalRecords() {
   };
 
   const handleSoftDelete = async (id) => {
+    if(!window.confirm("Are you sure you want to delete this medical record?")) return;
     try {
       const res = await api.softDeleteMedicalRecord(id);
       if(res.success) {
@@ -115,25 +116,34 @@ export default function AdminMedicalRecords() {
     <div className="space-y-6">
       
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Medical Records</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium mt-1">Manage and moderate user medical documents</p>
+      <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 lg:p-8 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-row flex-wrap md:flex-nowrap items-center justify-between gap-4 relative overflow-hidden w-full">
+        <div className="flex items-center gap-4 lg:gap-6 relative z-10 w-auto">
+          <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
+            <FileText className="w-8 h-8" />
+          </div>
+          <div className="text-left">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-1 text-left">
+              Medical Records
+            </h1>
+            <p className="text-xs sm:text-sm lg:text-base text-gray-500 dark:text-gray-400 font-medium flex items-center gap-2 text-left">
+              Manage and moderate user medical documents
+            </p>
+          </div>
         </div>
         
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap items-center justify-end gap-3 relative z-10 shrink-0 ml-auto pr-2">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input 
               type="text" placeholder="Search records, users..." 
               value={search} onChange={e => setSearch(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 w-64"
+              className="pl-9 pr-4 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-xl text-sm outline-none focus:ring-2 focus:ring-indigo-500/20 w-64"
             />
           </div>
           <div className="relative">
             <select 
               value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
-              className="pl-4 pr-10 py-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none cursor-pointer text-gray-700 dark:text-gray-300 hover:border-gray-300 transition-colors"
+              className="pl-4 pr-10 py-2 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-600 rounded-xl text-sm font-medium outline-none focus:ring-2 focus:ring-indigo-500/20 appearance-none cursor-pointer text-gray-700 dark:text-gray-300 hover:border-gray-300 transition-colors"
             >
               {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>

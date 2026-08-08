@@ -1,6 +1,7 @@
 import { Link, Outlet, useLocation, Navigate, useNavigate } from 'react-router-dom';
 import { useSettings } from '../../contexts/SettingsContext';
 import ThemeToggle from '../../components/ThemeToggle';
+import useTheme from '../../hooks/useTheme';
 import { 
   LayoutDashboard, 
   Users, 
@@ -28,6 +29,7 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const { settings } = useSettings();
+  const { theme: adminTheme, toggleTheme: toggleAdminTheme } = useTheme('admin_theme');
 
   // Check if logged in
   const isLoggedIn = localStorage.getItem('admin_logged_in') === 'true';
@@ -57,6 +59,7 @@ const AdminLayout = () => {
   ];
 
   return (
+    <div className={adminTheme === 'dark' ? 'dark' : ''} style={{colorScheme: adminTheme}} data-theme={adminTheme}>
     <div className="fixed inset-0 z-50 flex bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 font-sans">
       
       {/* Sidebar */}
@@ -130,7 +133,7 @@ const AdminLayout = () => {
           </div>
           
           <div className="flex items-center space-x-4">
-            <ThemeToggle />
+            <ThemeToggle theme={adminTheme} toggleTheme={toggleAdminTheme} />
             <Link to="/admin/feedback" title="Feedback" className="p-2 rounded-full hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-700 transition-colors">
               <MessageSquare className="w-5 h-5 text-gray-600 dark:text-gray-300" />
             </Link>
@@ -152,6 +155,7 @@ const AdminLayout = () => {
         </div>
       </main>
 
+    </div>
     </div>
   );
 };

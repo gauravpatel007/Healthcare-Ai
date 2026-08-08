@@ -280,12 +280,15 @@ async def analyze_image(request: VisionRequest, user_id: CurrentUserId, db: Asyn
                 data = last_response.json()
                 result_text = data["choices"][0]["message"]["content"]
         
-        # Clean up JSON formatting if the model wrapped it
-        # Sometimes models use ```json or just ```
         import re
         json_match = re.search(r'```(?:json)?\s*(.*?)\s*```', result_text, re.DOTALL | re.IGNORECASE)
         if json_match:
             result_text = json_match.group(1).strip()
+        else:
+            # Fallback: try to extract anything between the first { and last }
+            json_match2 = re.search(r'\{.*\}', result_text, re.DOTALL)
+            if json_match2:
+                result_text = json_match2.group(0)
             
         # Try strict parsing first
         try:

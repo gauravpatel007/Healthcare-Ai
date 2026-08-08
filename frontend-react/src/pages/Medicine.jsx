@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import API from '../utils/api';
+import { toast } from 'react-hot-toast';
 import editIcon from '../../../Icons/edit sign.png';
 import { 
   CheckCircle2, 
@@ -132,7 +133,7 @@ const Medicine = ({ voiceAction, onVoiceActionConsumed }) => {
         await API.delete(`/medicines/${id}`);
         setMedicines(medicines.filter(m => m.id !== id));
       } catch (e) {
-        alert('Failed to delete medicine');
+        toast.error('Failed to delete medicine');
       }
     }
   };
@@ -144,7 +145,7 @@ const Medicine = ({ voiceAction, onVoiceActionConsumed }) => {
 
   const handleUpdateMedicine = async () => {
     if (!editMedicine.name || !editMedicine.dosage) {
-      alert('Name and dosage are required');
+      toast.error('Name and dosage are required');
       return;
     }
     try {
@@ -155,8 +156,9 @@ const Medicine = ({ voiceAction, onVoiceActionConsumed }) => {
       setMedicines(medicines.map(m => m.id === updated.id ? updated : m));
       setShowEditForm(false);
       setEditMedicine(null);
+      toast.success('Medicine updated');
     } catch (e) {
-      alert('Failed to update medicine');
+      toast.error('Failed to update medicine');
     }
   };
 
@@ -164,27 +166,29 @@ const Medicine = ({ voiceAction, onVoiceActionConsumed }) => {
     try {
       const res = await API.get('/medicines/interactions');
       if (res.has_interactions) {
-        alert(`⚠️ Interactions Found:\n\n${res.warnings.map(w => w.description).join('\n')}`);
+        toast.error(`⚠️ Interactions Found:\n\n${res.warnings.map(w => w.description).join('\n')}`, { duration: 6000 });
       } else {
-        alert("✅ No Interactions Found\n\nYour current medications appear safe to take together.");
+        toast.success("✅ No Interactions Found\n\nYour current medications appear safe to take together.");
       }
     } catch (e) {
-      alert('Failed to check interactions');
+      toast.error('Failed to check interactions');
     }
   };
 
   const handleSaveMedicine = async () => {
     if (!newMedicine.name || !newMedicine.dosage) {
-      alert('Name and dosage are required');
+      toast.error('Name and dosage are required');
       return;
     }
     try {
       const added = await API.post('/medicines', newMedicine);
       setMedicines([added, ...medicines]);
       setShowAddForm(false);
+      setShowAddForm(false);
       setNewMedicine({ name: '', dosage: '', type: 'tablet', frequency: 'once_daily', purpose: '', times: ['08:00'], total_pills: 30, remaining: 30, start_date: new Date().toISOString().split('T')[0] });
+      toast.success('Medicine saved');
     } catch (e) {
-      alert('Failed to save medicine');
+      toast.error('Failed to save medicine');
     }
   };
 

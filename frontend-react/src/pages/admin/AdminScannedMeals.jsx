@@ -228,10 +228,10 @@ export default function AdminScannedMeals() {
               <div className="h-48 w-full relative overflow-hidden bg-gray-100 dark:bg-gray-900">
                 {meal.image_url ? (
                   <img
-                    src={`http://127.0.0.1:8000${meal.image_url}`}
+                    src={API.getMediaUrl(meal.image_url)}
                     alt={meal.name}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 cursor-pointer"
-                    onClick={() => setSelectedImage(`http://127.0.0.1:8000${meal.image_url}`)}
+                    onClick={() => setSelectedImage(API.getMediaUrl(meal.image_url))}
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center">

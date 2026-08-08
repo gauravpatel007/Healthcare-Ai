@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import API from '../utils/api';
+import { toast } from 'react-hot-toast';
 import editIcon from '../../../Icons/edit sign.png';
 import { 
   FolderOpen,
@@ -72,7 +73,7 @@ const Records = ({ voiceAction, onVoiceActionConsumed }) => {
           setShowAddForm(true);
         } else if (voiceAction.action_name === 'compare_reports') {
           setCompareMode(true);
-          alert('Compare mode enabled! Select 2 records to compare.');
+          toast.success('Compare mode enabled! Select 2 records to compare.');
         } else if (voiceAction.action_name === 'ai_summary' && voiceAction.data?.record_name) {
           const target = records.find(r => 
             r.title.toLowerCase().includes(voiceAction.data.record_name.toLowerCase())
@@ -83,10 +84,10 @@ const Records = ({ voiceAction, onVoiceActionConsumed }) => {
               setSummaryResult(res);
               setShowSummary(true);
             } catch(e) {
-              alert(`AI Summary for "${target.title}": Feature in progress.`);
+              toast.error(`AI Summary for "${target.title}": Feature in progress.`);
             }
           } else {
-            alert(`Could not find a record matching "${voiceAction.data.record_name}"`);
+            toast.error(`Could not find a record matching "${voiceAction.data.record_name}"`);
           }
         }
         if (onVoiceActionConsumed) onVoiceActionConsumed();
@@ -137,7 +138,7 @@ const Records = ({ voiceAction, onVoiceActionConsumed }) => {
       setSelectedForCompare(selectedForCompare.filter(r => r.id !== record.id));
     } else {
       if (selectedForCompare.length >= 2) {
-        alert('You can only compare 2 reports at a time.');
+        toast.error('You can only compare 2 reports at a time.');
         return;
       }
       setSelectedForCompare([...selectedForCompare, record]);
@@ -152,7 +153,7 @@ const Records = ({ voiceAction, onVoiceActionConsumed }) => {
     }
 
     if (selectedForCompare.length !== 2) {
-      alert('Please select exactly 2 records to compare');
+      toast.error('Please select exactly 2 records to compare');
       return;
     }
 
@@ -190,7 +191,7 @@ const Records = ({ voiceAction, onVoiceActionConsumed }) => {
         await API.delete(`/records/${id}`);
         setRecords(records.filter(r => r.id !== id));
       } catch (e) {
-        alert('Failed to delete record');
+        toast.error('Failed to delete record');
       }
     }
   };
@@ -202,7 +203,7 @@ const Records = ({ voiceAction, onVoiceActionConsumed }) => {
 
   const handleUpdateRecord = async () => {
     if (!editRecord.title || !editRecord.category || !editRecord.date) {
-      alert('Title, Category, and Date are required');
+      toast.error('Title, Category, and Date are required');
       return;
     }
     try {
@@ -213,14 +214,15 @@ const Records = ({ voiceAction, onVoiceActionConsumed }) => {
       setRecords(records.map(r => r.id === updated.id ? updated : r));
       setShowEditForm(false);
       setEditRecord(null);
+      toast.success('Record updated');
     } catch (e) {
-      alert(`Failed to update. Date sent: ${editRecord.date}. Error: ${e.message}`);
+      toast.error(`Failed to update. Date sent: ${editRecord.date}. Error: ${e.message}`);
     }
   };
 
   const handleSaveRecord = async () => {
     if (!newRecord.title || !newRecord.category || !newRecord.date) {
-      alert('Title, Category, and Date are required');
+      toast.error('Title, Category, and Date are required');
       return;
     }
     const formData = new FormData();
@@ -241,8 +243,9 @@ const Records = ({ voiceAction, onVoiceActionConsumed }) => {
       setShowAddForm(false);
       setNewRecord({ title: '', category: 'Blood Test', date: new Date().toISOString().split('T')[0], doctor: '', hospital: '', findings: '' });
       setSelectedFile(null);
+      toast.success('Record saved');
     } catch (e) {
-      alert('Failed to upload record: ' + (e.message || 'Unknown error'));
+      toast.error('Failed to upload record: ' + (e.message || 'Unknown error'));
     }
   };
 

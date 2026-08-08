@@ -16,9 +16,16 @@ import {
   Target,
   X
 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
+import MedicalDisclaimer from '../components/MedicalDisclaimer';
 
-const StatCard = ({ title, value, subtitle, icon: Icon, colorClass }) => (
-  <div className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 relative overflow-hidden group cursor-pointer">
+const StatCard = ({ title, value, subtitle, icon: Icon, colorClass, onClick }) => (
+  <div 
+    onClick={onClick}
+    tabIndex={0}
+    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick?.(e); } }}
+    className="bg-white dark:bg-gray-800 rounded-[2rem] p-6 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1.5 relative overflow-hidden group cursor-pointer focus:outline-none focus:ring-2 focus:ring-indigo-500"
+  >
     <div className={`absolute top-0 right-0 w-32 h-32 ${colorClass} opacity-10 rounded-bl-full -mr-8 -mt-8 transition-transform group-hover:scale-110`}></div>
     <div className="flex items-start justify-between relative z-10">
       <div>
@@ -152,7 +159,7 @@ const AIFitness = ({ voiceAction, onVoiceActionConsumed }) => {
       const count = parseInt(customMinusVal, 10);
       if (!isNaN(count) && count > 0) {
         if (count > stats.steps) {
-          alert("The steps you are trying to remove is more than you walked.");
+          toast.error("The steps you are trying to remove is more than you walked.");
         } else {
           addSteps(-count);
         }
@@ -165,10 +172,10 @@ const AIFitness = ({ voiceAction, onVoiceActionConsumed }) => {
     try {
       await API.post(`/ai/fitness/log?exercise_name=${encodeURIComponent(name)}&duration_minutes=30&calories=${calories}`);
       await refreshStats();
-      alert(`✅ ${name} logged! Burned ${calories} calories`);
+      toast.success(`${name} logged! Burned ${calories} calories`);
     } catch (e) {
       console.error(e);
-      alert('Failed to log exercise');
+      toast.error('Failed to log exercise');
     }
   };
 
@@ -206,6 +213,8 @@ const AIFitness = ({ voiceAction, onVoiceActionConsumed }) => {
           </div>
         </div>
       </div>
+
+      <MedicalDisclaimer />
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
@@ -326,7 +335,7 @@ const AIFitness = ({ voiceAction, onVoiceActionConsumed }) => {
         <div className="lg:col-span-2 flex flex-col gap-6 h-full">
 
           {/* Categories */}
-          <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-2 shadow-sm border border-gray-100 dark:border-gray-700 flex gap-2 overflow-x-auto">
+          <div className="flex items-center bg-gray-50 dark:bg-gray-900/50 p-1.5 rounded-2xl border border-gray-100 dark:border-gray-700 w-full overflow-x-auto">
             {[
               { id: 'cardio', label: 'Cardio', icon: HeartPulse },
               { id: 'strength', label: 'Strength', icon: Dumbbell },
@@ -334,10 +343,11 @@ const AIFitness = ({ voiceAction, onVoiceActionConsumed }) => {
             ].map(cat => (
               <button
                 key={cat.id}
-                className={`flex-1 flex items-center justify-center gap-2 py-3 px-6 rounded-[2rem] font-bold text-sm transition-all whitespace-nowrap ${currentCategory === cat.id
-                    ? 'bg-blue-600 text-white shadow-md'
-                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                  }`}
+                className={`flex-1 flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all duration-200 whitespace-nowrap ${
+                  currentCategory === cat.id
+                    ? 'bg-white dark:bg-gray-800 text-indigo-600 dark:text-indigo-400 shadow-sm'
+                    : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+                }`}
                 onClick={() => setCurrentCategory(cat.id)}
               >
                 <cat.icon className="w-4 h-4" />

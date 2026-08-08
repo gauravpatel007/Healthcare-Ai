@@ -43,70 +43,12 @@ async def lifespan(application: FastAPI):
         from sqlalchemy import text
         from app.database import AsyncSessionLocal
         async with AsyncSessionLocal() as db:
-            # MealPlans migration
+            # Run quick migrations
             try:
-                await db.execute(text("ALTER TABLE meal_plans ADD COLUMN source VARCHAR(50) NOT NULL DEFAULT 'Admin'"))
-                await db.execute(text("ALTER TABLE meal_plans ADD COLUMN user_id VARCHAR(36)"))
-                await db.commit()
-            except Exception as e:
-                await db.rollback()
-                logger.debug(f"Meal plan columns might already exist: {e}")
-                
-            # UserProfiles organ_preferences migration
-            try:
-                await db.execute(text("ALTER TABLE user_profiles ADD COLUMN organ_preferences JSON"))
-                await db.commit()
-                logger.info("Added organ_preferences column to user_profiles")
-            except Exception as e:
-                await db.rollback()
-                logger.debug(f"organ_preferences column might already exist: {e}")
-                
-            # HealthEntry Enum migration for steps and calories
-            try:
-                from app.database import engine
-                engine_autocommit = engine.execution_options(isolation_level="AUTOCOMMIT")
-                async with engine_autocommit.connect() as conn:
-                    # Postgres requires ALTER TYPE to run outside a transaction block
-                    await conn.execute(text("ALTER TYPE health_category ADD VALUE IF NOT EXISTS 'steps'"))
-                    await conn.execute(text("ALTER TYPE health_category ADD VALUE IF NOT EXISTS 'calories'"))
-            except Exception as e:
-                logger.debug(f"Enum values might already exist or not supported (sqlite): {e}")
-                
-            # Security and Audit Logs migrations
-            try:
-                await db.execute(text("ALTER TABLE admin_audit_logs ADD COLUMN device VARCHAR(500)"))
-                await db.execute(text("ALTER TABLE admin_audit_logs ADD COLUMN previous_value JSON"))
-                await db.execute(text("ALTER TABLE admin_audit_logs ADD COLUMN new_value JSON"))
-                await db.commit()
-            except Exception as e:
-                await db.rollback()
-            try:
-                await db.execute(text("ALTER TABLE users ADD COLUMN token_version INTEGER NOT NULL DEFAULT 1"))
-                await db.commit()
-            except Exception as e:
-                await db.rollback()
-            try:
-                await db.execute(text("ALTER TABLE login_history ADD COLUMN status VARCHAR(20) NOT NULL DEFAULT 'Success'"))
-                await db.commit()
-            except Exception as e:
-                await db.rollback()
-            try:
-                await db.execute(text('''
-                    CREATE TABLE IF NOT EXISTS blocked_ips (
-                        id VARCHAR(36) PRIMARY KEY,
-                        ip_address VARCHAR(45) UNIQUE NOT NULL,
-                        reason VARCHAR(255),
-                        blocked_by VARCHAR(36) REFERENCES users(id) ON DELETE SET NULL,
-                        expires_at TIMESTAMP WITH TIME ZONE,
-                        created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
-                        updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-                    );
-                    CREATE INDEX IF NOT EXISTS ix_blocked_ips_ip_address ON blocked_ips (ip_address);
-                '''))
-                await db.commit()
-            except Exception as e:
-                await db.rollback()
-                
+                await db.execute(text("ALTER TABLE scanned_meals ADD COLUMN is_deleted BOOLEAN DEFAULT FALSE;"))
+            except Exception:
+                pass # Column exists
+
             # Seed default AI meals into Recipes table
             try:
                 from app.routers.ai_nutrition import DEFAULT_MEALS
@@ -129,40 +71,8 @@ async def lifespan(application: FastAPI):
             except Exception as e:
                 logger.error(f"Error seeding default meals: {e}")
                 
-            await db.execute(text('''
-                ALTER TABLE chat_messages 
-                ADD COLUMN IF NOT EXISTS is_flagged BOOLEAN NOT NULL DEFAULT FALSE,
-                ADD COLUMN IF NOT EXISTS feedback INTEGER;
-            '''))
-            
-            await db.execute(text('''
-                CREATE TABLE IF NOT EXISTS ai_prompts (
-                    id VARCHAR(36) PRIMARY KEY,
-                    module VARCHAR(50) UNIQUE NOT NULL,
-                    name VARCHAR(100) NOT NULL,
-                    content TEXT NOT NULL,
-                    version INTEGER NOT NULL DEFAULT 1,
-                    is_active BOOLEAN NOT NULL DEFAULT TRUE,
-                    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-                );
-            '''))
-            await db.execute(text('CREATE INDEX IF NOT EXISTS ix_ai_prompts_module ON ai_prompts (module);'))
-            
-            await db.execute(text('''
-                CREATE TABLE IF NOT EXISTS ai_prompt_versions (
-                    id VARCHAR(36) PRIMARY KEY,
-                    prompt_id VARCHAR(36) NOT NULL REFERENCES ai_prompts(id) ON DELETE CASCADE,
-                    module VARCHAR(50) NOT NULL,
-                    content TEXT NOT NULL,
-                    version INTEGER NOT NULL,
-                    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now()
-                );
-            '''))
-            await db.execute(text('CREATE INDEX IF NOT EXISTS ix_ai_prompt_versions_prompt_id ON ai_prompt_versions (prompt_id);'))
-            
-            await db.commit()
     except Exception as e:
-        print("Migration failed:", e)
+        logger.error(f"Migration failed: {e}")
 
     # Create upload directory
     Path(settings.UPLOAD_DIR).mkdir(parents=True, exist_ok=True)

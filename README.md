@@ -5,6 +5,12 @@ A production-ready **FastAPI** backend for the LifeOS frontend, providing 80+ RE
 
 Quick Start :
 
+Frontend :
+```bash
+cd frontend-react
+npm install
+npm run dev
+```
 Backend :
 ```bash
 python -m venv venv
@@ -13,12 +19,7 @@ pip install -r requirements.txt
 cd backend
 python -m uvicorn app.main:app --reload --port 8000
 ```
-Frontend :
-```bash
-cd frontend-react
-npm install
-npm run dev
-```
+
 Chatbot :
 ```bash
 cd "G:\Languages\Healthcare AI\R1"

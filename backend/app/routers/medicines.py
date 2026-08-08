@@ -108,6 +108,18 @@ async def get_today_logs(user_id: CurrentUserId, db: AsyncSession = Depends(get_
     return result.scalars().all()
 
 
+@router.get("/logs", response_model=list[MedicineLogResponse])
+async def get_all_logs(user_id: CurrentUserId, limit: int = 500, db: AsyncSession = Depends(get_db)):
+    """Get historical medicine logs."""
+    result = await db.execute(
+        select(MedicineLog)
+        .where(MedicineLog.user_id == user_id)
+        .order_by(MedicineLog.date.desc())
+        .limit(limit)
+    )
+    return result.scalars().all()
+
+
 @router.post("/log", response_model=MedicineLogResponse)
 async def log_medicine(data: MedicineLogCreate, user_id: CurrentUserId, db: AsyncSession = Depends(get_db)):
     """Log a medicine dose (create or update)."""

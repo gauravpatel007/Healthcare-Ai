@@ -9,6 +9,19 @@ const LandingChatbot = () => {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
+  const chatRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isOpen && chatRef.current && !chatRef.current.contains(event.target)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -52,7 +65,7 @@ const LandingChatbot = () => {
   };
 
   return (
-    <>
+    <div ref={chatRef}>
       <div 
         className={`fixed bottom-24 right-6 z-[60] w-[340px] max-w-[90vw] h-[460px] bg-white dark:bg-slate-900 rounded-[24px] shadow-2xl border border-slate-100 dark:border-slate-800 flex flex-col overflow-hidden origin-bottom-right transition-all duration-200 ${isOpen ? 'scale-100 opacity-100 pointer-events-auto' : 'scale-95 opacity-0 pointer-events-none'}`}
       >
@@ -78,7 +91,7 @@ const LandingChatbot = () => {
                 </span>
               </div>
               <div 
-                className={`${msg.role === 'user' ? 'bg-blue-600 text-white rounded-tr-sm' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-tl-sm'} text-sm rounded-2xl px-4 py-2.5 shadow-sm whitespace-pre-wrap ${msg.role !== 'user' ? 'prose prose-sm dark:prose-invert max-w-none' : ''}`}
+                className={`${msg.role === 'user' ? 'bg-blue-600 text-white rounded-tr-sm whitespace-pre-wrap' : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 rounded-tl-sm prose prose-sm dark:prose-invert max-w-none prose-p:my-1 prose-ul:my-1 prose-li:my-0'} text-sm rounded-2xl px-4 py-2.5 shadow-sm`}
                 dangerouslySetInnerHTML={msg.role === 'user' ? undefined : { __html: window.marked ? window.marked.parse(msg.content) : msg.content }}
               >
                 {msg.role === 'user' ? msg.content : null}
@@ -129,7 +142,7 @@ const LandingChatbot = () => {
           {isOpen ? 'close' : 'chat'}
         </span>
       </button>
-    </>
+    </div>
   );
 };
 

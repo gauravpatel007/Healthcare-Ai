@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom'
+import { BrowserRouter as Router, Routes, Route, useLocation, useNavigate } from 'react-router-dom'
 import { SettingsProvider, useSettings } from './contexts/SettingsContext'
 import { AlertTriangle } from 'lucide-react'
+import { Toaster } from 'react-hot-toast'
 import LandingPage from './pages/LandingPage'
 import AppDashboard from './pages/AppDashboard'
 import SharedProfile from './pages/SharedProfile'
@@ -51,6 +52,7 @@ const MaintenanceScreen = ({ showLogoutMsg }) => (
 const AppRoutes = () => {
   const { settings, loading } = useSettings();
   const location = useLocation();
+  const navigate = useNavigate();
 
   const isMaintenance = settings?.maintenance_mode === 'true' || settings?.maintenance_mode === true;
   const isAdminRoute = location.pathname.startsWith('/admin');
@@ -73,12 +75,12 @@ const AppRoutes = () => {
       // If they are not on the root page, redirect them to the landing page after 5s
       if (!isRoot) {
         const timer = setTimeout(() => {
-          window.location.href = '/';
+          navigate('/');
         }, 5000);
         return () => clearTimeout(timer);
       }
     }
-  }, [isMaintenance, isAdminRoute, isRoot]);
+  }, [isMaintenance, isAdminRoute, isRoot, navigate]);
 
   // If maintenance mode is active, not on an admin route, and not on root
   if (isMaintenance && !isAdminRoute && !isRoot) {
@@ -121,6 +123,7 @@ const AppRoutes = () => {
 function App() {
   return (
     <SettingsProvider>
+      <Toaster position="top-right" toastOptions={{ className: 'dark:bg-gray-800 dark:text-white border border-gray-100 dark:border-gray-700 shadow-xl rounded-2xl' }} />
       <Router>
         <AppRoutes />
       </Router>

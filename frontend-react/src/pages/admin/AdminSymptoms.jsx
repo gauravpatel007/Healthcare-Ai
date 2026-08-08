@@ -114,24 +114,35 @@ export default function AdminSymptoms() {
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
       
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">Symptom Checker</h1>
-          <p className="text-gray-500 dark:text-gray-400 font-medium mt-1">Manage dictionary of symptoms or view user check history.</p>
+      <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 lg:p-8 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-row flex-wrap md:flex-nowrap items-center justify-between gap-4 relative overflow-hidden w-full">
+        <div className="flex items-center gap-4 lg:gap-6 relative z-10 w-auto">
+          <div className="w-16 h-16 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-2xl flex items-center justify-center shrink-0 shadow-inner">
+            <Thermometer className="w-8 h-8" />
+          </div>
+          <div className="text-left">
+            <h1 className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight mb-1 text-left">
+              Symptom Checker
+            </h1>
+            <p className="text-xs sm:text-sm lg:text-base text-gray-500 dark:text-gray-400 font-medium flex items-center gap-2 text-left">
+              Manage dictionary of symptoms or view user check history.
+            </p>
+          </div>
         </div>
-        <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-xl">
-          <button 
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${view === 'dictionary' ? 'bg-white dark:bg-gray-800 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
-            onClick={() => setView('dictionary')}
-          >
-            Dictionary
-          </button>
-          <button 
-            className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${view === 'history' ? 'bg-white dark:bg-gray-800 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
-            onClick={() => setView('history')}
-          >
-            History
-          </button>
+        <div className="flex items-center justify-end gap-3 relative z-10 shrink-0 ml-auto pr-2 flex-wrap">
+          <div className="flex bg-gray-100 dark:bg-gray-700 p-1 rounded-xl">
+            <button 
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${view === 'dictionary' ? 'bg-white dark:bg-gray-800 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+              onClick={() => setView('dictionary')}
+            >
+              Dictionary
+            </button>
+            <button 
+              className={`px-4 py-2 rounded-lg text-sm font-bold transition-all ${view === 'history' ? 'bg-white dark:bg-gray-800 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'}`}
+              onClick={() => setView('history')}
+            >
+              History
+            </button>
+          </div>
         </div>
       </div>
 
@@ -209,7 +220,7 @@ export default function AdminSymptoms() {
                     </div>
                   </td>
                   <td className="p-4 text-right pr-6">
-                    <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-end gap-2 transition-opacity">
                       <button onClick={() => handleOpenModal(item)} className="p-2 text-gray-400 hover:text-amber-500 hover:bg-amber-50 dark:bg-amber-900/30 rounded-lg transition-colors">
                         <Edit2 className="w-4 h-4" />
                       </button>

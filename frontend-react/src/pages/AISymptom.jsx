@@ -34,12 +34,23 @@ const AISymptom = ({ voiceAction, onVoiceActionConsumed }) => {
 
   const resultsRef = useRef(null);
 
-  const quickAddSymptoms = [
-    'Headache', 'Fever', 'Cough', 'Fatigue', 
-    'Nausea', 'Back Pain', 'Sore Throat', 'Dizziness', 
-    'Chest Pain', 'Joint Pain', 'Shortness of Breath', 'Rash'
-  ];
+  const [dbSymptoms, setDbSymptoms] = useState([]);
 
+  useEffect(() => {
+    const fetchSymptoms = async () => {
+      try {
+        const res = await API.getAdminSymptoms();
+        if (res && Array.isArray(res)) {
+          setDbSymptoms(res.map(s => s.name));
+        }
+      } catch (err) {
+        console.error("Failed to fetch custom symptoms", err);
+      }
+    };
+    fetchSymptoms();
+  }, []);
+
+  const quickAddSymptoms = [...new Set(dbSymptoms)];
   const handleAddSymptom = (s) => {
     const symptom = s.trim().toLowerCase();
     if (symptom && !selectedSymptoms.includes(symptom)) {

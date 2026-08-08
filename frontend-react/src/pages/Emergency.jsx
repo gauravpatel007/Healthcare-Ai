@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import API from '../utils/api';
+import toast from 'react-hot-toast';
 import {
   AlertTriangle, Phone, Activity, HeartPulse, Plus, X, Edit2, Trash2,
-  MapPin, ShieldAlert, Bot, Search, Droplet, Clock, Download, Share2, User
+  MapPin, ShieldAlert, Bot, Search, Droplet, Clock, Download, Share2, User, Heart
 } from 'lucide-react';
 import OrganDonorModal from '../components/OrganDonorModal';
 import OrganNetworkModal from '../components/OrganNetworkModal';
@@ -73,7 +74,8 @@ const Emergency = ({ voiceAction, onVoiceActionConsumed }) => {
 
   const startLiveTracking = (sessionId) => {
     try {
-      const ws = new WebSocket(`ws://127.0.0.1:8000/api/v1/emergency/ws/${sessionId}`);
+      const wsUrl = API.getWebSocketUrl(`/emergency/ws/${sessionId}`);
+      const ws = new WebSocket(wsUrl);
       activeSessionRef.current = ws;
 
       ws.onopen = () => {
@@ -144,12 +146,12 @@ const Emergency = ({ voiceAction, onVoiceActionConsumed }) => {
         startLiveTracking(sessionId);
 
         if (!isSilent) {
-          alert('SOS ALERT SENT.\n\nActions triggered:\n' + res.actions.map(a => `✅ ${a}`).join('\n') + '\n\n📞 Emergency: 112');
+          toast.success('SOS ALERT SENT.\n\nActions triggered:\n' + res.actions.map(a => `✅ ${a}`).join('\n') + '\n\n📞 Emergency: 112', { duration: 8000 });
         } else {
           console.log("Silent SOS executed successfully.");
         }
       } catch (e) {
-        if (!isSilent) alert('Failed to send SOS');
+        if (!isSilent) toast.error('Failed to send SOS');
       } finally {
         if (!isSilent) setSosLoading(false);
       }
@@ -159,10 +161,10 @@ const Emergency = ({ voiceAction, onVoiceActionConsumed }) => {
   const toggleDonor = async () => {
     try {
       const res = await API.post('/emergency/toggle-donor');
-      alert(res.message);
+      toast.success(res.message);
       fetchData(); // refresh profile state
     } catch (e) {
-      alert('Failed to update status');
+      toast.error('Failed to update status');
     }
   };
 
@@ -188,7 +190,7 @@ const Emergency = ({ voiceAction, onVoiceActionConsumed }) => {
       });
       setTriageResult(res);
     } catch (e) {
-      alert("Failed to evaluate symptom.");
+      toast.error("Failed to evaluate symptom.");
     } finally {
       setTriageLoading(false);
     }
@@ -203,7 +205,7 @@ const Emergency = ({ voiceAction, onVoiceActionConsumed }) => {
       });
       setFirstAidResult(res.response);
     } catch (e) {
-      alert("Failed to get first aid instructions.");
+      toast.error("Failed to get first aid instructions.");
     } finally {
       setFirstAidLoading(false);
     }
@@ -241,7 +243,7 @@ const Emergency = ({ voiceAction, onVoiceActionConsumed }) => {
 
   const saveContact = async () => {
     if (!modalData.name || !modalData.phone || !modalData.relation) {
-      alert("Please fill in all fields.");
+      toast.error("Please fill in all fields.");
       return;
     }
 
@@ -253,8 +255,9 @@ const Emergency = ({ voiceAction, onVoiceActionConsumed }) => {
       }
       setModalOpen(false);
       fetchData();
+      toast.success(`Contact ${modalMode === 'add' ? 'added' : 'updated'} successfully`);
     } catch (e) {
-      alert(`Failed to ${modalMode} contact`);
+      toast.error(`Failed to ${modalMode} contact`);
     }
   };
 
@@ -263,8 +266,9 @@ const Emergency = ({ voiceAction, onVoiceActionConsumed }) => {
       try {
         await API.delete(`/emergency/contacts/${id}`);
         fetchData();
+        toast.success('Contact deleted');
       } catch (e) {
-        alert('Failed to delete contact');
+        toast.error('Failed to delete contact');
       }
     }
   };
@@ -291,8 +295,9 @@ const Emergency = ({ voiceAction, onVoiceActionConsumed }) => {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+      toast.success("QR code downloaded");
     } catch (e) {
-      alert("Failed to download QR code.");
+      toast.error("Failed to download QR code.");
     }
   };
 
@@ -303,9 +308,9 @@ const Emergency = ({ voiceAction, onVoiceActionConsumed }) => {
       const res = await API.post('/share/generate');
       const url = `${window.location.origin}/shared/${res.token}`;
       await navigator.clipboard.writeText(url);
-      alert("Secure Digital ID link copied!");
+      toast.success("Secure Digital ID link copied!");
     } catch (e) {
-      alert("Failed to generate secure Digital ID link.");
+      toast.error("Failed to generate secure Digital ID link.");
     } finally {
       setSharingLoading(false);
     }
@@ -315,8 +320,7 @@ const Emergency = ({ voiceAction, onVoiceActionConsumed }) => {
   if (!profile) return <div className="empty-state">Failed to load Emergency Data</div>;
 
   return (
-    <div className="flex-1 min-w-0 flex flex-col min-h-screen">
-      <div className="p-8">
+    <div className="w-full max-w-7xl mx-auto space-y-6 pb-20">
 
         {/* Header */}
         <div className="bg-white dark:bg-gray-800 rounded-[2.5rem] p-6 lg:p-8 shadow-sm border border-gray-100 dark:border-gray-700 flex flex-row flex-wrap md:flex-nowrap items-center justify-between gap-4 relative overflow-hidden w-full mb-8">
@@ -337,8 +341,8 @@ const Emergency = ({ voiceAction, onVoiceActionConsumed }) => {
         </div>
 
         {/* AI Urgency Evaluator */}
-        <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-purple-50 to-fuchsia-50 dark:from-purple-900/20 dark:to-fuchsia-900/20 border border-purple-100 dark:border-purple-800/30 flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-800/50 flex items-center justify-center text-purple-600 dark:text-purple-400 shrink-0">
+        <div className="mb-8 p-6 rounded-2xl bg-gradient-to-r from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20 border border-red-100 dark:border-red-800/30 flex items-center gap-4">
+          <div className="w-12 h-12 rounded-xl bg-red-100 dark:bg-red-800/50 flex items-center justify-center text-red-600 dark:text-red-400 shrink-0">
             <Bot size={24} />
           </div>
           <div className="flex-1 relative">
@@ -348,11 +352,11 @@ const Emergency = ({ voiceAction, onVoiceActionConsumed }) => {
               onChange={e => setTriageSymptom(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && evaluateTriage()}
               placeholder="Describe your symptoms for instant AI triage (e.g., 'Severe chest pain')"
-              className="w-full py-3 px-4 pl-12 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500 outline-none"
+              className="w-full py-3 px-4 pl-12 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
             />
             <Search className="absolute left-4 top-3.5 text-gray-400" size={20} />
           </div>
-          <button onClick={evaluateTriage} disabled={triageLoading} className="px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-70 disabled:cursor-wait shrink-0">
+          <button onClick={evaluateTriage} disabled={triageLoading} className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl transition-colors disabled:opacity-70 disabled:cursor-wait shrink-0">
             {triageLoading ? 'Evaluating...' : 'Evaluate'}
           </button>
         </div>
@@ -478,14 +482,13 @@ const Emergency = ({ voiceAction, onVoiceActionConsumed }) => {
                       </div>
                       <div>
                         <h4 className="font-bold text-gray-900 dark:text-white text-lg">{c.name}</h4>
-                        <div className="flex items-center gap-2 mt-1">
-                          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300">{c.relation}</span>
-                          <span className="text-sm text-gray-500 dark:text-gray-400">{c.phone}</span>
-                          {c.carrier && <span className="flex items-center gap-1 text-xs font-semibold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/20 px-2 py-0.5 rounded"><ShieldAlert size={12} /> {c.carrier} SMS</span>}
+                        <div className="flex flex-wrap items-center gap-2 mt-1">
+                          <span className="px-2 py-0.5 rounded text-xs font-semibold bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 whitespace-nowrap">{c.relation}</span>
+                          <span className="text-sm text-gray-500 dark:text-gray-400 whitespace-nowrap">{c.phone}</span>
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-2 opacity-100 lg:opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                       <button onClick={() => openEditModal(c)} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">
                         <Edit2 size={18} />
                       </button>
@@ -541,7 +544,7 @@ const Emergency = ({ voiceAction, onVoiceActionConsumed }) => {
                 {/* Donor Registration Card */}
                 <div onClick={() => setIsOrganDonorModalOpen(true)} className="p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm flex flex-col justify-between transition-colors hover:bg-green-50 dark:hover:bg-green-900/10 cursor-pointer group">
                   <div className="flex items-start justify-between mb-4">
-                    <div className="text-4xl">💚</div>
+                    <Heart className="w-10 h-10 text-green-500" fill="currentColor" />
                     <span className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${profile.organ_donor ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400'}`}>
                       {profile.organ_donor ? 'Registered' : 'Not Registered'}
                     </span>
@@ -769,7 +772,6 @@ const Emergency = ({ voiceAction, onVoiceActionConsumed }) => {
           onClose={() => setIsOrganNetworkModalOpen(false)}
           userBloodType={profile?.blood_type}
         />
-      </div>
     </div>
   );
 };

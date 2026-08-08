@@ -26,8 +26,7 @@ const AdminLogin = () => {
         method: 'POST',
         body: { email: username.trim(), password: password.trim() },
       });
-      API.setToken(response.data?.access_token || response.access_token);
-      API.setRefreshToken(response.data?.refresh_token || response.refresh_token);
+      API.setAuthenticated(true);
       const profile = await API.saveCurrentAccount();
       if (profile?.role === 'admin') {
         localStorage.setItem('admin_logged_in', 'true');

@@ -1,47 +1,53 @@
-const BASE_URL = 'http://127.0.0.1:8000/api/v1';
+const BASE_URL = import.meta.env.VITE_API_URL || '/api/v1';
 
 const API = {
-  getToken() {
-    return localStorage.getItem('lifeos_token');
-  },
-  
-  setToken(token) {
-    if (token) localStorage.setItem('lifeos_token', token);
-    else localStorage.removeItem('lifeos_token');
-  },
-
-  getRefreshToken() {
-    return localStorage.getItem('lifeos_refresh_token');
+  getWebSocketUrl(path) {
+    let base = BASE_URL;
+    if (base.startsWith('/')) {
+      base = window.location.origin + base;
+    }
+    return base.replace(/^http/, 'ws') + path;
   },
 
-  setRefreshToken(token) {
-    if (token) localStorage.setItem('lifeos_refresh_token', token);
-    else localStorage.removeItem('lifeos_refresh_token');
+  getMediaUrl(path) {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    const base = import.meta.env.VITE_API_BASE_URL || '';
+    return base + path;
   },
 
   isAuthenticated() {
-    return !!this.getToken();
+    return localStorage.getItem('lifeos_is_authenticated') === 'true';
   },
 
-  logout(emailToRemove = null) {
+  setAuthenticated(status) {
+    if (status) localStorage.setItem('lifeos_is_authenticated', 'true');
+    else localStorage.removeItem('lifeos_is_authenticated');
+  },
+
+  async logout(emailToRemove = null) {
     if (emailToRemove) {
       let accounts = this.getSavedAccounts();
       accounts = accounts.filter(a => a.email !== emailToRemove);
       localStorage.setItem('lifeos_accounts', JSON.stringify(accounts));
       
-      // If we just removed the active account, switch to another if available
       if (accounts.length > 0) {
-        this.setToken(accounts[0].token);
-        this.setRefreshToken(accounts[0].refreshToken);
-        window.location.href = '/app';
+        // Logout current session first
+        try {
+          await fetch(`${BASE_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
+        } catch (e) { }
+        // Automatically switch to the next available account
+        this.switchAccount(accounts[0].email);
         return;
       }
     } else {
       localStorage.removeItem('lifeos_accounts'); // Clear all on full logout
     }
 
-    this.setToken(null);
-    this.setRefreshToken(null);
+    this.setAuthenticated(false);
+    try {
+      await fetch(`${BASE_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
+    } catch (e) { }
     window.location.href = '/';
   },
 
@@ -52,9 +58,8 @@ const API = {
     } catch(e) { return []; }
   },
 
-  async saveCurrentAccount() {
+  async saveCurrentAccount(refreshToken = null) {
     try {
-      // First, get the profile using the current token
       const profile = await this.get('/auth/me');
       if (!profile) return;
       
@@ -64,14 +69,14 @@ const API = {
       
       const newAccount = {
         email: profile.email,
-        name: profile.name || profile.email.split('@')[0],
-        token: this.getToken(),
-        refreshToken: this.getRefreshToken()
+        name: profile.name || profile.email.split('@')[0]
       };
+      if (refreshToken) newAccount.refresh_token = refreshToken;
       
       const existingIdx = accounts.findIndex(a => a.email === newAccount.email);
       if (existingIdx >= 0) {
-        accounts[existingIdx] = newAccount;
+        if (refreshToken) accounts[existingIdx].refresh_token = refreshToken;
+        accounts[existingIdx].name = newAccount.name;
       } else {
         accounts.push(newAccount);
       }
@@ -84,13 +89,24 @@ const API = {
     }
   },
 
-  switchAccount(email) {
+  async switchAccount(email) {
     const accounts = this.getSavedAccounts();
-    const target = accounts.find(a => a.email === email);
-    if (target) {
-      this.setToken(target.token);
-      this.setRefreshToken(target.refreshToken);
+    const acc = accounts.find(a => a.email === email);
+    if (!acc || !acc.refresh_token) {
+      this.setAuthenticated(false);
+      window.location.href = '/?login=true';
+      return;
+    }
+    try {
+      await this.request('/auth/switch-account', {
+        method: 'POST',
+        body: { refresh_token: acc.refresh_token }
+      });
       window.location.href = '/app';
+    } catch(e) {
+      console.error("Failed to switch account", e);
+      this.setAuthenticated(false);
+      window.location.href = '/?login=true';
     }
   },
 
@@ -106,14 +122,10 @@ const API = {
       options.body = JSON.stringify(options.body);
     }
 
-    const token = this.getToken();
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
     const config = {
       ...options,
-      headers
+      headers,
+      credentials: 'include'
     };
 
     try {
@@ -121,25 +133,13 @@ const API = {
       
       if (response.status === 401 && !options._retry) {
         if (!url.includes('/auth/login') && !url.includes('/auth/register')) {
-          let refreshed = false;
-          if (this.getRefreshToken()) {
-            refreshed = await this.refreshToken();
-          }
+          config._retry = true;
+          let refreshed = await this.refreshToken();
           
           if (refreshed) {
-            config._retry = true;
-            config.headers['Authorization'] = `Bearer ${this.getToken()}`;
             response = await fetch(url, config);
           } else {
-            // Only remove the expired account, not all accounts
-            const expiredToken = this.getToken();
-            const accounts = this.getSavedAccounts();
-            const expiredAcc = accounts.find(a => a.token === expiredToken);
-            if (expiredAcc) {
-              this.logout(expiredAcc.email);
-            } else {
-              this.logout();
-            }
+            this.logout();
             throw new Error("Session expired. Please log in again.");
           }
         }
@@ -180,21 +180,9 @@ const API = {
     try {
       const res = await fetch(`${BASE_URL}/auth/refresh`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: this.getRefreshToken() })
+        credentials: 'include'
       });
-
-      if (res.ok) {
-        const json = await res.json();
-        if (json.data && json.data.access_token) {
-          this.setToken(json.data.access_token);
-          if (json.data.refresh_token) {
-            this.setRefreshToken(json.data.refresh_token);
-          }
-          return true;
-        }
-      }
-      return false;
+      return res.ok;
     } catch (e) {
       return false;
     }

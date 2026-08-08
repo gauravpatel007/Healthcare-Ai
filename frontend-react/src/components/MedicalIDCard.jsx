@@ -47,8 +47,12 @@ const MedicalIDCard = () => {
               <span className="material-symbols-outlined text-9xl">health_and_safety</span>
             </div>
             <div className="relative z-10 flex items-center gap-8">
-              <div className="w-28 h-28 bg-white rounded-2xl flex items-center justify-center text-5xl shadow-inner text-slate-800">
-                👤
+              <div className="w-28 h-28 bg-white rounded-2xl flex items-center justify-center text-5xl shadow-inner text-slate-800 overflow-hidden">
+                {profile.avatar || profile.avatar_url ? (
+                  <img src={(profile.avatar || profile.avatar_url).startsWith('http') ? (profile.avatar || profile.avatar_url) : `http://localhost:8000${profile.avatar || profile.avatar_url}`} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  <span>👤</span>
+                )}
               </div>
               <div>
                 <h1 className="text-4xl font-bold m-0">{profile.name}</h1>

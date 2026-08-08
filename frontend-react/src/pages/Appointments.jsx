@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import API from '../utils/api';
+import { toast } from 'react-hot-toast';
 import { 
   Calendar as CalendarIcon, 
   Clock, 
@@ -142,7 +143,7 @@ const Appointments = ({ voiceAction, onVoiceActionConsumed }) => {
 
   const handleAdd = async () => {
     if (!newApt.doctor || !newApt.date) {
-      alert('Please fill in doctor and date');
+      toast.error('Please fill in doctor and date');
       return;
     }
     try {
@@ -150,9 +151,10 @@ const Appointments = ({ voiceAction, onVoiceActionConsumed }) => {
       setAppointments([...appointments, added]);
       setShowForm(false);
       setNewApt({ doctor: '', specialty: 'General Physician', hospital: '', date: '', time: '10:00', notes: '' });
+      toast.success('Appointment added successfully');
     } catch (e) {
       console.error("Failed to add appointment:", e);
-      alert('Failed to add appointment: ' + (e.message || 'Unknown error'));
+      toast.error('Failed to add appointment: ' + (e.message || 'Unknown error'));
     }
   };
 
@@ -160,8 +162,9 @@ const Appointments = ({ voiceAction, onVoiceActionConsumed }) => {
     try {
       await API.put(`/appointments/${id}`, { status: 'completed' });
       setAppointments(appointments.map(a => a.id === id ? { ...a, status: 'completed' } : a));
+      toast.success('Appointment marked as completed');
     } catch (e) {
-      alert('Failed to update status');
+      toast.error('Failed to update status');
     }
   };
 
@@ -170,8 +173,9 @@ const Appointments = ({ voiceAction, onVoiceActionConsumed }) => {
       try {
         await API.delete(`/appointments/${id}`);
         setAppointments(appointments.filter(a => a.id !== id));
+        toast.success('Appointment deleted');
       } catch (e) {
-        alert('Failed to delete');
+        toast.error('Failed to delete');
       }
     }
   };
@@ -210,9 +214,10 @@ const Appointments = ({ voiceAction, onVoiceActionConsumed }) => {
       setAppointments(appointments.map(a => a.id === updatedApt.id ? updatedApt : a));
       setPrepModal({ isOpen: false, aptId: null });
       setPrepSymptoms('');
+      toast.success('AI Preparation generated!');
     } catch (e) {
       console.error(e);
-      alert('Failed to generate prep questions: ' + (e.message || 'Unknown error'));
+      toast.error('Failed to generate prep questions: ' + (e.message || 'Unknown error'));
     } finally {
       setIsPrepping(false);
     }

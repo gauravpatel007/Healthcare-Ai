@@ -33,7 +33,7 @@ import secrets
 import string
 import pyotp
 from datetime import datetime, timedelta, timezone
-from fastapi import Request
+from fastapi import Request, Response
 
 logger = logging.getLogger("lifeos.auth")
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -128,8 +128,8 @@ async def log_login(user: User, db: AsyncSession, request: Request, status: str 
             asyncio.to_thread(send_login_alert_email, user.email, ip_address, user_agent, time_str)
         )
 
-@router.post("/login")
-async def login(data: LoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
+@router.post("/login", response_model=AuthResponse)
+async def login(data: LoginRequest, request: Request, response: Response, db: AsyncSession = Depends(get_db)):
     """Authenticate user with email and password."""
     # Check for blocked IP
     ip_address = request.client.host if request.client else "Unknown"
@@ -166,18 +166,22 @@ async def login(data: LoginRequest, request: Request, db: AsyncSession = Depends
     logger.info("User logged in: %s", user.email)
     await log_login(user, db, request)
     
+    settings = get_settings()
+    response.set_cookie(key="lifeos_access_token", value=access_token, httponly=True, samesite="lax", max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+    response.set_cookie(key="lifeos_refresh_token", value=refresh_token, httponly=True, samesite="lax", max_age=60 * 60 * 24 * 7)
+    
     return AuthResponse(
         message="Login successful",
         data=TokenResponse(
-            access_token=access_token,
+            access_token="cookie",
             refresh_token=refresh_token,
-            expires_in=get_settings().ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         ),
     )
 
 
 @router.post("/google", response_model=AuthResponse)
-async def google_auth(data: GoogleLoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
+async def google_auth(data: GoogleLoginRequest, request: Request, response: Response, db: AsyncSession = Depends(get_db)):
     """Authenticate or register user with Google OAuth."""
     # Check for blocked IP
     ip_address = request.client.host if request.client else "Unknown"
@@ -241,10 +245,13 @@ async def google_auth(data: GoogleLoginRequest, request: Request, db: AsyncSessi
         logger.info("User logged in via Google: %s", user.email)
         await log_login(user, db, request)
         
+        response.set_cookie(key="lifeos_access_token", value=access_token, httponly=True, samesite="lax", max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+        response.set_cookie(key="lifeos_refresh_token", value=refresh_token, httponly=True, samesite="lax", max_age=60 * 60 * 24 * 7)
+        
         return AuthResponse(
             message="Google Sign-In successful",
             data=TokenResponse(
-                access_token=access_token,
+                access_token="cookie",
                 refresh_token=refresh_token,
                 expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
             ),
@@ -331,7 +338,7 @@ async def reset_password(data: ResetPasswordRequest, db: AsyncSession = Depends(
 
 
 @router.post("/verify-email", response_model=AuthResponse)
-async def verify_email(data: VerifyEmailRequest, db: AsyncSession = Depends(get_db)):
+async def verify_email(data: VerifyEmailRequest, response: Response, db: AsyncSession = Depends(get_db)):
     """Verify email using code and log the user in."""
     # Find token
     result = await db.execute(
@@ -372,11 +379,14 @@ async def verify_email(data: VerifyEmailRequest, db: AsyncSession = Depends(get_
     refresh_token = create_refresh_token(user.id)
     
     logger.info("Email verified for: %s", data.email)
+    response.set_cookie(key="lifeos_access_token", value=access_token, httponly=True, samesite="lax", max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+    response.set_cookie(key="lifeos_refresh_token", value=refresh_token, httponly=True, samesite="lax", max_age=60 * 60 * 24 * 7)
+    
     return AuthResponse(
         message="Email successfully verified.",
         data=TokenResponse(
-            access_token=access_token,
-            refresh_token=refresh_token,
+            access_token="cookie",
+            refresh_token="cookie",
             expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         )
     )
@@ -411,9 +421,13 @@ async def resend_verification(data: ResendVerificationRequest, db: AsyncSession 
 
 
 @router.post("/refresh", response_model=AuthResponse)
-async def refresh_token(data: RefreshRequest, db: AsyncSession = Depends(get_db)):
+async def refresh_token(request: Request, response: Response, db: AsyncSession = Depends(get_db)):
     """Refresh access token using a valid refresh token."""
-    payload = decode_refresh_token(data.refresh_token)
+    refresh_token = request.cookies.get("lifeos_refresh_token")
+    if not refresh_token:
+        raise UnauthorizedException("No refresh token provided")
+        
+    payload = decode_refresh_token(refresh_token)
     user_id = payload.get("sub")
 
     result = await db.execute(select(User).where(User.id == user_id))
@@ -426,10 +440,46 @@ async def refresh_token(data: RefreshRequest, db: AsyncSession = Depends(get_db)
     access_token = create_access_token(user.id, user.role, token_version=user.token_version)
     new_refresh = create_refresh_token(user.id, token_version=user.token_version)
 
+    response.set_cookie(key="lifeos_access_token", value=access_token, httponly=True, samesite="lax", max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+    response.set_cookie(key="lifeos_refresh_token", value=new_refresh, httponly=True, samesite="lax", max_age=60 * 60 * 24 * 7)
+
     return AuthResponse(
         message="Token refreshed",
         data=TokenResponse(
-            access_token=access_token,
+            access_token="cookie",
+            refresh_token=new_refresh,
+            expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        ),
+    )
+
+@router.post("/switch-account", response_model=AuthResponse)
+async def switch_account(data: RefreshRequest, request: Request, response: Response, db: AsyncSession = Depends(get_db)):
+    """Switch to a saved account using its refresh token."""
+    try:
+        payload = decode_refresh_token(data.refresh_token)
+        user_id = payload.get("sub")
+    except UnauthorizedException:
+        raise UnauthorizedException("Session expired. Please log in again.")
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+
+    if not user or not user.is_active:
+        raise UnauthorizedException("Account not found or deactivated.")
+
+    settings = get_settings()
+    access_token = create_access_token(user.id, user.role, token_version=user.token_version)
+    new_refresh = create_refresh_token(user.id, token_version=user.token_version)
+
+    response.set_cookie(key="lifeos_access_token", value=access_token, httponly=True, samesite="lax", max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+    response.set_cookie(key="lifeos_refresh_token", value=new_refresh, httponly=True, samesite="lax", max_age=60 * 60 * 24 * 7)
+    
+    logger.info("User switched account: %s", user.email)
+
+    return AuthResponse(
+        message="Account switched successfully",
+        data=TokenResponse(
+            access_token="cookie",
             refresh_token=new_refresh,
             expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         ),
@@ -437,8 +487,20 @@ async def refresh_token(data: RefreshRequest, db: AsyncSession = Depends(get_db)
 
 
 @router.post("/logout")
-async def logout(user_id: CurrentUserId):
+async def logout(response: Response, request: Request):
     """Logout (client should discard tokens)."""
+    user_id = "unknown"
+    try:
+        token = request.cookies.get("lifeos_access_token")
+        if token:
+            from app.utils.security import decode_access_token
+            payload = decode_access_token(token)
+            user_id = payload.get("sub", "unknown")
+    except Exception:
+        pass
+        
+    response.delete_cookie("lifeos_access_token")
+    response.delete_cookie("lifeos_refresh_token")
     logger.info("User logged out: %s", user_id)
     return {"success": True, "message": "Logged out successfully"}
 
@@ -498,7 +560,7 @@ async def face_disable(user_id: CurrentUserId, db: AsyncSession = Depends(get_db
 
 
 @router.post("/face-login", response_model=AuthResponse)
-async def face_login(data: FaceLoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
+async def face_login(data: FaceLoginRequest, request: Request, response: Response, db: AsyncSession = Depends(get_db)):
     """Login using facial recognition."""
     result = await db.execute(select(User).where(User.email == data.email))
     user = result.scalar_one_or_none()
@@ -534,17 +596,20 @@ async def face_login(data: FaceLoginRequest, request: Request, db: AsyncSession 
     access_token = create_access_token(user.id, user.role)
     refresh_token = create_refresh_token(user.id)
     
+    response.set_cookie(key="lifeos_access_token", value=access_token, httponly=True, samesite="lax", max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+    response.set_cookie(key="lifeos_refresh_token", value=refresh_token, httponly=True, samesite="lax", max_age=60 * 60 * 24 * 7)
+    
     return AuthResponse(
         message="Face Login successful",
         data=TokenResponse(
-            access_token=access_token,
+            access_token="cookie",
             refresh_token=refresh_token,
             expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         ),
     )
 
 @router.post("/login/2fa", response_model=AuthResponse)
-async def login_2fa(data: TwoFactorLoginRequest, request: Request, db: AsyncSession = Depends(get_db)):
+async def login_2fa(data: TwoFactorLoginRequest, request: Request, response: Response, db: AsyncSession = Depends(get_db)):
     """Complete login using 2FA code and temp token."""
     try:
         from app.utils.security import decode_access_token
@@ -563,19 +628,23 @@ async def login_2fa(data: TwoFactorLoginRequest, request: Request, db: AsyncSess
     if not totp.verify(data.code):
         raise UnauthorizedException("Invalid authentication code")
 
+    settings = get_settings()
     # Generate real tokens
     access_token = create_access_token(user.id, user.role)
     refresh_token = create_refresh_token(user.id)
 
     logger.info("User logged in with 2FA: %s", user.email)
     await log_login(user, db, request)
+    
+    response.set_cookie(key="lifeos_access_token", value=access_token, httponly=True, samesite="lax", max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60)
+    response.set_cookie(key="lifeos_refresh_token", value=refresh_token, httponly=True, samesite="lax", max_age=60 * 60 * 24 * 7)
 
     return AuthResponse(
         message="Login successful",
         data=TokenResponse(
-            access_token=access_token,
+            access_token="cookie",
             refresh_token=refresh_token,
-            expires_in=get_settings().ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+            expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         ),
     )
 

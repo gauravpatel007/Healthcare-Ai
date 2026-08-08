@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import useTheme from '../hooks/useTheme';
 import { Routes, Route, Link, useNavigate, useLocation } from 'react-router-dom';
 import API from '../utils/api';
+import { toast } from 'react-hot-toast';
 
 // Pages
 import DashboardOverview from './DashboardOverview';
@@ -49,6 +51,7 @@ const AppDashboard = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const { theme: userTheme, toggleTheme: toggleUserTheme } = useTheme('user_theme');
 
   const [currentUser, setCurrentUser] = useState({ name: 'Loading...', email: '' });
   const [savedAccounts, setSavedAccounts] = useState([]);
@@ -130,12 +133,10 @@ const AppDashboard = () => {
   const handleAddAccount = (e) => {
     e.stopPropagation();
     window.location.href = '/?login=true';
-  };
-
-  const overviewItems = [
+  };  const overviewItems = [
     { id: 'dashboard', label: 'Dashboard', path: '/app', icon: LayoutDashboard },
+    { id: 'analytics', label: 'Analytics', path: '/app/analytics', icon: BarChart3 },
     { id: 'trackers', label: 'Trackers', path: '/app/trackers', icon: Activity },
-    { id: 'analytics', label: 'Statistics', path: '/app/analytics', icon: BarChart3 },
   ];
 
   const aiCareItems = [
@@ -169,7 +170,7 @@ const AppDashboard = () => {
     }
     const target = allFeatures.find(f => f.id === action.target_feature);
     if (!target) {
-      alert(`Unknown feature: ${action.target_feature}`);
+      toast.error(`Unknown feature: ${action.target_feature}`);
       return;
     }
     setVoiceAction(null);
@@ -222,6 +223,7 @@ const AppDashboard = () => {
   );
 
   return (
+    <div className={userTheme === 'dark' ? 'dark' : ''} style={{colorScheme: userTheme}} data-theme={userTheme}>
     <div className="fixed inset-0 z-50 flex bg-gray-50 dark:bg-black text-gray-900 dark:text-gray-100 font-sans overflow-hidden">
 
       {/* Sidebar */}
@@ -332,7 +334,7 @@ const AppDashboard = () => {
               )}
             </div>
 
-            <ThemeToggle />
+            <ThemeToggle theme={userTheme} toggleTheme={toggleUserTheme} />
             <UserNotificationsDropdown />
 
             {/* User Dropdown */}
@@ -417,7 +419,7 @@ const AppDashboard = () => {
         {/* Page Content */}
         <div className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 scroll-smooth bg-gray-50 dark:bg-black relative">
           <Routes>
-            <Route path="/" element={<DashboardOverview />} />
+            <Route path="/" element={<DashboardOverview currentUser={currentUser} />} />
             <Route path="/appointments" element={<Appointments voiceAction={voiceAction} onVoiceActionConsumed={() => setVoiceAction(null)} />} />
             <Route path="/records" element={<Records voiceAction={voiceAction} onVoiceActionConsumed={() => setVoiceAction(null)} />} />
             <Route path="/medicine" element={<Medicine voiceAction={voiceAction} onVoiceActionConsumed={() => setVoiceAction(null)} />} />
@@ -437,6 +439,7 @@ const AppDashboard = () => {
       <FeedbackModal isOpen={showFeedbackModal} onClose={() => setShowFeedbackModal(false)} />
       {/* Global "Hey LifeOS" Voice Assistant — always present */}
       <VoiceLogger onLogSuccess={(msg) => alert(msg)} onAction={handleVoiceAction} />
+    </div>
     </div>
   );
 };

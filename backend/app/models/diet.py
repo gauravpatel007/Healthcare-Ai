@@ -2,7 +2,7 @@
 LifeOS Backend — Diet & Meal Plan Models
 """
 
-from sqlalchemy import DateTime, Integer, String, Text, JSON, func, ForeignKey
+from sqlalchemy import DateTime, Integer, String, Text, JSON, Boolean, func, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base, generate_uuid, TimestampMixin
@@ -92,4 +92,5 @@ class ScannedMeal(Base, TimestampMixin):
     fats: Mapped[int] = mapped_column(Integer, default=0)
     image_url: Mapped[str] = mapped_column(Text, nullable=True)
     meal_type: Mapped[str] = mapped_column(String(50), default="Scanned Snack")
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
     recorded_at: Mapped[str] = mapped_column(DateTime(timezone=True), server_default=func.now(), nullable=False)

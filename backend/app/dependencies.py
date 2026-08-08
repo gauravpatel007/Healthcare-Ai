@@ -6,7 +6,7 @@ FastAPI dependencies for database sessions, auth, and role checking.
 import logging
 from typing import Annotated
 
-from fastapi import Depends, Header
+from fastapi import Depends, Header, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -20,14 +20,16 @@ DbSession = Annotated[AsyncSession, Depends(get_db)]
 
 
 async def get_current_user_id(
-    authorization: str = Header(..., description="Bearer <access_token>"),
+    request: Request,
     db: AsyncSession = Depends(get_db),
 ) -> str:
-    """Extract and validate user ID from the Authorization header."""
-    if not authorization.startswith("Bearer "):
-        raise UnauthorizedException("Invalid authorization header format. Use: Bearer <token>")
-
-    token = authorization.removeprefix("Bearer ").strip()
+    """Extract and validate user ID from the cookies or Authorization header."""
+    token = request.cookies.get("lifeos_access_token")
+    if not token:
+        authorization = request.headers.get("Authorization")
+        if authorization and authorization.startswith("Bearer "):
+            token = authorization.removeprefix("Bearer ").strip()
+            
     if not token:
         raise UnauthorizedException("Token is missing")
 
@@ -61,13 +63,17 @@ def require_role(*allowed_roles: str):
     """Dependency factory that checks if the user has one of the allowed roles."""
 
     async def role_checker(
-        authorization: str = Header(...),
+        request: Request,
         db: AsyncSession = Depends(get_db),
     ) -> str:
-        if not authorization.startswith("Bearer "):
-            raise UnauthorizedException("Invalid authorization header")
-
-        token = authorization.removeprefix("Bearer ").strip()
+        token = request.cookies.get("lifeos_access_token")
+        if not token:
+            authorization = request.headers.get("Authorization")
+            if authorization and authorization.startswith("Bearer "):
+                token = authorization.removeprefix("Bearer ").strip()
+                
+        if not token:
+            raise UnauthorizedException("Invalid authorization header or missing cookie")
         payload = decode_access_token(token)
 
         user_id: str | None = payload.get("sub")

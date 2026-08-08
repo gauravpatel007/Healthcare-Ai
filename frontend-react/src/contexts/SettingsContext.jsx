@@ -26,30 +26,6 @@ export const SettingsProvider = ({ children }) => {
     fetchSettings();
   }, []);
 
-  // Local User Theme State
-  const [userTheme, setUserTheme] = useState(() => {
-    const saved = localStorage.getItem('theme');
-    if (saved) return saved;
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-  });
-
-  const toggleTheme = () => {
-    setUserTheme(prev => prev === 'light' ? 'dark' : 'light');
-  };
-
-  // Sync Theme with DOM
-  useEffect(() => {
-    if (userTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-      document.documentElement.setAttribute('data-theme', 'dark');
-      localStorage.setItem('theme', 'dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.setAttribute('data-theme', 'light');
-      localStorage.setItem('theme', 'light');
-    }
-  }, [userTheme]);
-
   // Apply Colors from Admin Settings
   useEffect(() => {
     if (!settings) return;
@@ -98,7 +74,11 @@ export const SettingsProvider = ({ children }) => {
   }, [settings]);
 
   return (
-    <SettingsContext.Provider value={{ settings, loading, refreshSettings: fetchSettings, userTheme, toggleTheme, setUserTheme }}>
+    <SettingsContext.Provider value={{ 
+      settings, 
+      loading, 
+      refreshSettings: fetchSettings
+    }}>
       {children}
     </SettingsContext.Provider>
   );
