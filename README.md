@@ -1,4 +1,4 @@
-# LifeOS Backend — AI-Powered Healthcare Operating System
+# LifeOS — AI-Powered Healthcare Operating System
 
 A production-ready **FastAPI** backend for the LifeOS frontend, providing 80+ REST API endpoints across 16 healthcare modules.
 
